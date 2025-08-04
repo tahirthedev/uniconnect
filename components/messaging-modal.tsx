@@ -1,0 +1,246 @@
+﻿'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  X, 
+  Send, 
+  MessageCircle,
+  User
+} from 'lucide-react';
+import { apiClient } from '@/lib/api';
+
+interface Message {
+  _id: string;
+  sender: {
+    _id: string;
+    name: string;
+    avatar?: string;
+  };
+  messageBody: string;
+  createdAt: string;
+  status: string;
+}
+
+interface MessagingModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  recipientName: string;
+  rideTitle: string;
+  recipientId?: string;
+  rideId?: string;
+}
+
+export default function MessagingModal({ 
+  isOpen, 
+  onClose, 
+  recipientName, 
+  rideTitle,
+  recipientId,
+  rideId 
+}: MessagingModalProps) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Get current user info
+      const userInfo = localStorage.getItem('userInfo');
+      if (userInfo) {
+        setCurrentUser(JSON.parse(userInfo));
+      }
+      
+      // Load conversation if we have recipient ID
+      if (recipientId) {
+        loadConversation();
+      }
+    }
+  }, [isOpen, recipientId]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const loadConversation = async () => {
+    if (!recipientId) return;
+    
+    setLoading(true);
+    try {
+      const response = await apiClient.getConversation(recipientId);
+      setMessages(response.messages || []);
+    } catch (error) {
+      console.error('Failed to load conversation:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !recipientId) return;
+
+    setSending(true);
+    try {
+      const messageData = {
+        messageBody: newMessage.trim(),
+        relatedPost: rideId || null
+      };
+
+      const response = await apiClient.sendMessage(recipientId, messageData);
+      
+      // Add the new message to the conversation
+      if (response.message) {
+        setMessages(prev => [...prev, response.message]);
+      }
+      
+      setNewMessage('');
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-GB', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) return 'Today';
+    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    return date.toLocaleDateString('en-GB');
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-2xl h-[600px] flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between pb-4">
+          <div className="flex items-center space-x-3">
+            <MessageCircle className="h-5 w-5 text-orange-600" />
+            <div>
+              <CardTitle className="text-lg">Message {recipientName}</CardTitle>
+              <p className="text-sm text-gray-600">About: {rideTitle}</p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-6 w-6"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </CardHeader>
+
+        <CardContent className="flex-1 flex flex-col p-0">
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+            {loading ? (
+              <div className="flex justify-center items-center h-32">
+                <div className="text-gray-500">Loading conversation...</div>
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-32 text-gray-500">
+                <MessageCircle className="h-8 w-8 mb-2" />
+                <p>No messages yet. Start the conversation!</p>
+              </div>
+            ) : (
+              messages.map((message, index) => {
+                const isCurrentUser = currentUser && message.sender._id === currentUser._id;
+                const showDate = index === 0 || 
+                  formatDate(messages[index - 1].createdAt) !== formatDate(message.createdAt);
+
+                return (
+                  <div key={message._id}>
+                    {showDate && (
+                      <div className="text-center text-xs text-gray-500 my-4">
+                        {formatDate(message.createdAt)}
+                      </div>
+                    )}
+                    <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                        isCurrentUser 
+                          ? 'bg-orange-500 text-white' 
+                          : 'bg-white border'
+                      }`}>
+                        {!isCurrentUser && (
+                          <div className="flex items-center mb-1">
+                            <User className="h-3 w-3 mr-1" />
+                            <span className="text-xs font-medium">{message.sender.name}</span>
+                          </div>
+                        )}
+                        <p className="text-sm">{message.messageBody}</p>
+                        <p className={`text-xs mt-1 ${
+                          isCurrentUser ? 'text-orange-100' : 'text-gray-500'
+                        }`}>
+                          {formatTime(message.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Message Input */}
+          <div className="border-t bg-white p-4">
+            {!recipientId ? (
+              <div className="text-center text-gray-500 py-4">
+                <p>Messaging functionality requires user authentication.</p>
+                <Button 
+                  onClick={() => window.location.href = '/auth'} 
+                  className="mt-2"
+                  size="sm"
+                >
+                  Sign In to Message
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleSendMessage} className="flex space-x-2">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                  disabled={sending}
+                />
+                <Button
+                  type="submit"
+                  disabled={sending || !newMessage.trim()}
+                  className="bg-orange-500 hover:bg-orange-600"
+                  size="icon"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </form>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
