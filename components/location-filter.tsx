@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { MapPin, Filter, X } from 'lucide-react';
-import { getCurrentLocation } from '@/lib/location';
+import { getCachedLocationOnly } from '@/lib/location';
 
 interface LocationFilterProps {
   onFilterChange: (filters: {
@@ -25,17 +25,38 @@ export default function LocationFilter({
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [radius, setRadius] = useState(defaultRadius);
   const [locationEnabled, setLocationEnabled] = useState(false);
-  const [locationStatus, setLocationStatus] = useState<'detecting' | 'enabled' | 'disabled' | 'error'>('disabled');
+  const [locationStatus, setLocationStatus] = useState<'available' | 'unavailable'>('unavailable');
 
   // Memoize the callback to prevent infinite re-renders
-  const memoizedOnFilterChange = useCallback(onFilterChange, []);
+  const memoizedOnFilterChange = useCallback(onFilterChange, [onFilterChange]);
 
   useEffect(() => {
-    // Try to get location on mount
-    detectLocation();
+    console.log('🌍 LocationFilter effect triggered - checking cached location:', {
+      timestamp: new Date().toISOString()
+    });
+    // Only check for cached location - no auto-detection
+    checkCachedLocation();
+    
+    // Listen for location updates from homepage
+    const handleLocationUpdate = () => {
+      console.log('📢 LocationFilter received location update event');
+      checkCachedLocation();
+    };
+    
+    window.addEventListener('locationUpdated', handleLocationUpdate);
+    
+    return () => {
+      window.removeEventListener('locationUpdated', handleLocationUpdate);
+    };
   }, []); // Empty dependency array - only run on mount
 
   useEffect(() => {
+    console.log('📤 LocationFilter notifying parent of filter changes:', {
+      locationEnabled,
+      userLocation,
+      radius,
+      timestamp: new Date().toISOString()
+    });
     // Notify parent of filter changes
     memoizedOnFilterChange({
       lat: locationEnabled && userLocation ? userLocation.lat : undefined,
@@ -45,27 +66,44 @@ export default function LocationFilter({
     });
   }, [userLocation, radius, locationEnabled, memoizedOnFilterChange]);
 
-  const detectLocation = async () => {
-    setLocationStatus('detecting');
+  const checkCachedLocation = useCallback(() => {
+    console.log('🔍 LocationFilter checking cached location...');
     try {
-      const location = await getCurrentLocation();
-      setUserLocation({ lat: location.latitude, lng: location.longitude });
-      setLocationEnabled(true);
-      setLocationStatus('enabled');
+      const cachedLocation = getCachedLocationOnly();
+      console.log('💾 Cached location result:', cachedLocation);
+      if (cachedLocation) {
+        const newUserLocation = { lat: cachedLocation.latitude, lng: cachedLocation.longitude };
+        
+        console.log('📍 Setting cached location data:', {
+          newLocation: newUserLocation,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Set location data immediately - don't rely on comparison
+        setUserLocation(newUserLocation);
+        setLocationStatus('available');
+        setLocationEnabled(true);
+        
+        console.log('✅ Cached location applied - location filter enabled');
+      } else {
+        console.log('❌ No cached location found');
+        setLocationStatus('unavailable');
+        setLocationEnabled(false);
+        setUserLocation(null);
+      }
     } catch (error) {
-      console.error('Location detection failed:', error);
-      setLocationStatus('error');
+      console.error('Failed to get cached location:', error);
+      setLocationStatus('unavailable');
       setLocationEnabled(false);
+      setUserLocation(null);
     }
-  };
+  }, []);
 
   const toggleLocation = () => {
-    if (!userLocation) {
-      detectLocation();
-    } else {
+    if (userLocation) {
       setLocationEnabled(!locationEnabled);
-      setLocationStatus(locationEnabled ? 'disabled' : 'enabled');
     }
+    // If no location is cached, user needs to update location on homepage
   };
 
   const handleRadiusChange = (newRadius: number) => {
@@ -77,18 +115,21 @@ export default function LocationFilter({
       <div className="flex items-center gap-2">
         <button
           onClick={toggleLocation}
+          disabled={!userLocation}
           className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-            locationEnabled 
-              ? 'bg-green-100 text-green-700 border border-green-200' 
-              : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
+            !userLocation
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+              : locationEnabled 
+                ? 'bg-green-100 text-green-700 border border-green-200' 
+                : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
           }`}
         >
           <MapPin className="h-3 w-3" />
-          {locationStatus === 'detecting' ? 'Detecting...' : 
+          {!userLocation ? 'Set location' : 
            locationEnabled ? `${radius}km` : 'Near me'}
         </button>
         
-        {locationEnabled && (
+        {locationEnabled && userLocation && (
           <select 
             value={radius}
             onChange={(e) => handleRadiusChange(parseInt(e.target.value))}
@@ -98,6 +139,12 @@ export default function LocationFilter({
               <option key={option} value={option}>{option}km</option>
             ))}
           </select>
+        )}
+        
+        {!userLocation && (
+          <span className="text-xs text-gray-500">
+            Update location on homepage
+          </span>
         )}
       </div>
     );
@@ -109,18 +156,29 @@ export default function LocationFilter({
         <label className="text-sm font-medium text-gray-700">Location Filter</label>
         <button
           onClick={toggleLocation}
+          disabled={!userLocation}
           className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-            locationEnabled 
-              ? 'bg-green-100 text-green-700 border border-green-200' 
-              : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
+            !userLocation
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+              : locationEnabled 
+                ? 'bg-green-100 text-green-700 border border-green-200' 
+                : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
           }`}
         >
           <MapPin className="h-4 w-4" />
-          {locationStatus === 'detecting' ? 'Detecting Location...' : 
-           locationStatus === 'error' ? 'Try Again' :
+          {!userLocation ? 'Set Location First' : 
            locationEnabled ? 'Location Enabled' : 'Enable Location'}
         </button>
       </div>
+
+      {!userLocation && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <div className="flex items-center gap-2 text-yellow-800 text-sm">
+            <MapPin className="h-4 w-4" />
+            <span>Please update your location on the homepage to use location-based filtering.</span>
+          </div>
+        </div>
+      )}
 
       {locationEnabled && userLocation && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-3">
@@ -157,10 +215,10 @@ export default function LocationFilter({
         </div>
       )}
 
-      {locationStatus === 'error' && (
+      {!userLocation && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
           <p className="text-sm text-yellow-800">
-            📍 Location access denied. You can still browse all listings or try enabling location again.
+            📍 Please update your location on the homepage to use location-based filtering.
           </p>
         </div>
       )}

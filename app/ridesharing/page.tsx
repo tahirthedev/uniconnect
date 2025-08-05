@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/navigation';
-import LocationFilter from '@/components/location-filter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,14 +14,70 @@ import {
   Clock, 
   Users, 
   MessageCircle, 
-  Plus, 
-  Filter 
+  Plus
 } from 'lucide-react';
 import { ApiClient } from '@/lib/api';
 import BookingModal from '@/components/booking-modal';
 import MessagingModal from '@/components/messaging-modal';
+import { useLocationData } from '@/contexts/LocationContext';
 
 const apiClient = new ApiClient();
+
+// Sample UK university ridesharing data - moved outside component to prevent re-creation
+const sampleRides: Ride[] = [
+  {
+    _id: '1',
+    title: 'London to Oxford Universities',
+    description: 'Regular trip between campuses, comfortable car with AC',
+    pickup: 'King\'s Cross Station',
+    destination: 'Oxford University',
+    date: '2025-01-15',
+    time: '09:00',
+    price: 20,
+    availableSeats: 3,
+    user: { name: 'Sarah Johnson', avatar: '/placeholder-user.jpg' },
+    createdAt: new Date().toISOString()
+  },
+  {
+    _id: '2',
+    title: 'Manchester to Liverpool Universities',
+    description: 'Weekend trip with stops at both universities',
+    pickup: 'Manchester City Centre',
+    destination: 'Liverpool University',
+    date: '2025-01-16',
+    time: '10:30',
+    price: 15,
+    availableSeats: 2,
+    user: { name: 'James Wilson', avatar: '/placeholder-user.jpg' },
+    createdAt: new Date().toISOString()
+  },
+  {
+    _id: '3',
+    title: 'Edinburgh to Glasgow Daily Commute',
+    description: 'Reliable daily service between campuses',
+    pickup: 'Edinburgh Waverley',
+    destination: 'Glasgow University',
+    date: '2025-01-17',
+    time: '07:45',
+    price: 12,
+    availableSeats: 1,
+    user: { name: 'Emma McKenzie', avatar: '/placeholder-user.jpg' },
+    createdAt: new Date().toISOString()
+  },
+  {
+    _id: '4',
+    title: 'Birmingham to Coventry Universities',
+    description: 'Daily commute, eco-friendly hybrid vehicle',
+    pickup: 'Birmingham New Street',
+    destination: 'University of Warwick',
+    date: '2025-01-18',
+    time: '08:15',
+    price: 8,
+    availableSeats: 2,
+    user: { name: 'Michael Davies', avatar: '/placeholder-user.jpg' },
+    createdAt: new Date().toISOString()
+  }
+];
 
 interface Ride {
   _id: string;
@@ -43,100 +98,27 @@ interface Ride {
 }
 
 export default function RidesharingPage() {
+  // Global location state
+  const locationData = useLocationData();
+  
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showMessagingModal, setShowMessagingModal] = useState(false);
   const [locationBased, setLocationBased] = useState(false);
-  const [filters, setFilters] = useState({
-    from: '',
-    to: '',
-    date: '',
-    maxPrice: ''
-  });
-  const [locationFilter, setLocationFilter] = useState({
-    lat: undefined as number | undefined,
-    lng: undefined as number | undefined,
-    radius: undefined as number | undefined,
-    hasLocation: false
-  });
 
-  // Sample UK university ridesharing data
-  const sampleRides: Ride[] = [
-    {
-      _id: '1',
-      title: 'London to Oxford Universities',
-      description: 'Regular trip between campuses, comfortable car with AC',
-      pickup: 'King\'s Cross Station',
-      destination: 'Oxford University',
-      date: '2025-01-15',
-      time: '09:00',
-      price: 20,
-      availableSeats: 3,
-      user: { name: 'Sarah Johnson', avatar: '/placeholder-user.jpg' },
-      createdAt: new Date().toISOString()
-    },
-    {
-      _id: '2',
-      title: 'Manchester to Liverpool Universities',
-      description: 'Weekend trip with stops at both universities',
-      pickup: 'Manchester City Centre',
-      destination: 'Liverpool University',
-      date: '2025-01-16',
-      time: '10:30',
-      price: 15,
-      availableSeats: 2,
-      user: { name: 'James Wilson', avatar: '/placeholder-user.jpg' },
-      createdAt: new Date().toISOString()
-    },
-    {
-      _id: '3',
-      title: 'Edinburgh to Glasgow Daily Commute',
-      description: 'Reliable daily service between campuses',
-      pickup: 'Edinburgh Waverley',
-      destination: 'Glasgow University',
-      date: '2025-01-17',
-      time: '07:45',
-      price: 12,
-      availableSeats: 1,
-      user: { name: 'Emma McKenzie', avatar: '/placeholder-user.jpg' },
-      createdAt: new Date().toISOString()
-    },
-    {
-      _id: '4',
-      title: 'Birmingham to Coventry Universities',
-      description: 'Daily commute, eco-friendly hybrid vehicle',
-      pickup: 'Birmingham New Street',
-      destination: 'University of Warwick',
-      date: '2025-01-18',
-      time: '08:15',
-      price: 8,
-      availableSeats: 2,
-      user: { name: 'Michael Davies', avatar: '/placeholder-user.jpg' },
-      createdAt: new Date().toISOString()
-    }
-  ];
-
-  useEffect(() => {
-    fetchRides();
-  }, [filters, locationFilter]);
-
-  const fetchRides = async () => {
+  const fetchRides = useCallback(async () => {
     setLoading(true);
     try {
       const params: any = { category: 'pick-drop' }; // Use pick-drop category
       
       // Add location parameters if available
-      if (locationFilter.hasLocation && locationFilter.lat && locationFilter.lng) {
-        params.lat = locationFilter.lat;
-        params.lng = locationFilter.lng;
-        params.radius = locationFilter.radius || 20;
+      if (locationData.hasLocation && locationData.lat && locationData.lng) {
+        params.lat = locationData.lat;
+        params.lng = locationData.lng;
+        params.radius = locationData.radius || 20;
       }
-      
-      // Add other filters
-      if (filters.maxPrice) params.priceMax = parseFloat(filters.maxPrice);
       
       const response = await apiClient.getPosts(params);
       const rideData = response.posts || [];
@@ -173,11 +155,11 @@ export default function RidesharingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // ✅ No dependencies = stable function reference
 
-  const handleLocationFilterChange = useCallback((newLocationFilter: any) => {
-    setLocationFilter(newLocationFilter);
-  }, []);
+  useEffect(() => {
+    fetchRides();
+  }, [locationData.lat, locationData.lng, locationData.radius, locationData.hasLocation, fetchRides]); // ✅ Direct dependencies like posts page
 
   const getPriceValue = (price: number | { amount: number; type: string; currency: string }): number => {
     return typeof price === 'object' ? price.amount : price;
@@ -236,8 +218,6 @@ export default function RidesharingPage() {
         notes: `Booking for ${seats} seat(s)`
       };
 
-      console.log('Booking data being sent:', bookingData); // Debug log
-
       try {
         // Try to send booking to backend
         await apiClient.bookRide(rideId, bookingData);
@@ -270,15 +250,6 @@ export default function RidesharingPage() {
       alert('Failed to book ride. Please try again.');
     }
   };
-
-  const filteredRides = rides.filter(ride => {
-    return (
-      (!filters.from || ride.pickup.toLowerCase().includes(filters.from.toLowerCase())) &&
-      (!filters.to || ride.destination.toLowerCase().includes(filters.to.toLowerCase())) &&
-      (!filters.date || ride.date === filters.date) &&
-      (!filters.maxPrice || getPriceValue(ride.price) <= parseInt(filters.maxPrice))
-    );
-  });
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -322,7 +293,7 @@ export default function RidesharingPage() {
                     <span>•</span>
                     <div className="flex items-center space-x-1">
                       <MapPin className="h-4 w-4 text-green-600" />
-                      <span className="text-sm text-green-600">Showing nearby rides ({locationFilter.radius || 20}km radius)</span>
+                      <span className="text-sm text-green-600">Showing nearby rides ({locationData.radius || 20}km radius)</span>
                     </div>
                   </>
                 )}
@@ -330,14 +301,6 @@ export default function RidesharingPage() {
             </div>
           </div>
           <div className="flex gap-3">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2"
-            >
-              <Filter className="h-4 w-4" />
-              Filters
-            </Button>
             <Link href="/ridesharing/offer">
               <Button className="bg-orange-500 hover:bg-orange-600 flex items-center gap-2">
                 <Plus className="h-4 w-4" />
@@ -347,72 +310,14 @@ export default function RidesharingPage() {
           </div>
         </div>
 
-        {/* Filters */}
-        {showFilters && (
-          <Card className="mb-6">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                {/* Location Filter */}
-                <div className="md:col-span-1">
-                  <LocationFilter 
-                    onFilterChange={handleLocationFilterChange}
-                    defaultRadius={20}
-                    compact={true}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">From</label>
-                  <input
-                    type="text"
-                    placeholder="Pickup location"
-                    value={filters.from}
-                    onChange={(e) => setFilters({...filters, from: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">To</label>
-                  <input
-                    type="text"
-                    placeholder="Destination"
-                    value={filters.to}
-                    onChange={(e) => setFilters({...filters, to: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
-                  <input
-                    type="date"
-                    value={filters.date}
-                    onChange={(e) => setFilters({...filters, date: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Max Price (£)</label>
-                  <input
-                    type="number"
-                    placeholder="Maximum price"
-                    value={filters.maxPrice}
-                    onChange={(e) => setFilters({...filters, maxPrice: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Rides List */}
         <div className="space-y-4">
-          {filteredRides.length === 0 ? (
+          {rides.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
                 <Car className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No rides found</h3>
-                <p className="text-gray-600 mb-4">Try adjusting your filters or check back later for new rides.</p>
+                <p className="text-gray-600 mb-4">Check back later for new rides or be the first to offer one!</p>
                 <Link href="/ridesharing/offer">
                   <Button className="bg-orange-500 hover:bg-orange-600">
                     Offer a Ride
@@ -421,7 +326,7 @@ export default function RidesharingPage() {
               </CardContent>
             </Card>
           ) : (
-            filteredRides.map((ride) => (
+            rides.map((ride) => (
               <Card key={ride._id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start">

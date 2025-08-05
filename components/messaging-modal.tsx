@@ -90,10 +90,14 @@ export default function MessagingModal({
 
     setSending(true);
     try {
-      const messageData = {
-        messageBody: newMessage.trim(),
-        relatedPost: rideId || null
+      const messageData: any = {
+        messageBody: newMessage.trim()
       };
+
+      // Only include relatedPost if rideId exists
+      if (rideId) {
+        messageData.relatedPost = rideId;
+      }
 
       const response = await apiClient.sendMessage(recipientId, messageData);
       

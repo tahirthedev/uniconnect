@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { ArrowLeft, Search, MapPin, Filter } from "lucide-react";
 import Link from "next/link";
 import Navigation from "@/components/navigation";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ApiClient } from "@/lib/api";
+import { useLocationData, useLocation } from '@/contexts/LocationContext';
 
 const apiClient = new ApiClient();
 
@@ -37,6 +38,10 @@ interface Post {
 }
 
 export default function PostsPage() {
+  // Global location state
+  const locationData = useLocationData();
+  const { updateRadius } = useLocation();
+  
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<Post[]>([]);
   const [locationBased, setLocationBased] = useState(false);
@@ -45,28 +50,32 @@ export default function PostsPage() {
     priceMin: '',
     priceMax: '',
   });
-  const [locationFilter, setLocationFilter] = useState({
-    lat: undefined as number | undefined,
-    lng: undefined as number | undefined,
-    radius: undefined as number | undefined,
-    hasLocation: false
-  });
 
   useEffect(() => {
+    console.log('🔄 PostsPage useEffect triggered:', {
+      filters,
+      locationData: {
+        lat: locationData.lat,
+        lng: locationData.lng,
+        radius: locationData.radius,
+        hasLocation: locationData.hasLocation
+      },
+      timestamp: new Date().toISOString()
+    });
     loadPosts();
-  }, [filters, locationFilter]);
+  }, [filters, locationData.lat, locationData.lng, locationData.radius, locationData.hasLocation]);
 
-  const loadPosts = async () => {
+  const loadPosts = useCallback(async () => {
     try {
       setLoading(true);
       
       const params: any = {};
       
       // Add location parameters if available
-      if (locationFilter.hasLocation && locationFilter.lat && locationFilter.lng) {
-        params.lat = locationFilter.lat;
-        params.lng = locationFilter.lng;
-        params.radius = locationFilter.radius || 20;
+      if (locationData.hasLocation && locationData.lat && locationData.lng) {
+        params.lat = locationData.lat;
+        params.lng = locationData.lng;
+        params.radius = locationData.radius || 20;
       }
       
       // Add other filters
@@ -83,15 +92,23 @@ export default function PostsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // No dependencies
 
   const handleFilterChange = useCallback((key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
 
   const handleLocationFilterChange = useCallback((newLocationFilter: any) => {
-    setLocationFilter(newLocationFilter);
-  }, []);
+    console.log('📍 Posts location filter change requested:', {
+      new: newLocationFilter,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Only update radius if it has changed
+    if (newLocationFilter.radius !== locationData.radius) {
+      updateRadius(newLocationFilter.radius);
+    }
+  }, [locationData.radius, updateRadius]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -111,7 +128,7 @@ export default function PostsPage() {
                   <span>•</span>
                   <div className="flex items-center space-x-1">
                     <MapPin className="h-4 w-4 text-green-600" />
-                    <span className="text-sm text-green-600">Showing nearby results ({locationFilter.radius || 20}km radius)</span>
+                    <span className="text-sm text-green-600">Showing nearby results ({locationData.radius || 20}km radius)</span>
                   </div>
                 </>
               )}
@@ -127,7 +144,7 @@ export default function PostsPage() {
               <div className="lg:col-span-1">
                 <LocationFilter 
                   onFilterChange={handleLocationFilterChange}
-                  defaultRadius={20}
+                  defaultRadius={locationData.radius || 20}
                   compact={true}
                 />
               </div>

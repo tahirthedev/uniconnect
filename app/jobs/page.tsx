@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import LocationFilter from "@/components/location-filter";
+import { useLocationData, useLocation } from '@/contexts/LocationContext';
 
 interface Job {
   id: number;
@@ -24,12 +25,15 @@ interface Job {
 }
 
 export default function JobsPage() {
+  // Global location state
+  const locationData = useLocationData();
+  const { updateRadius } = useLocation();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [locationData, setLocationData] = useState<any>(null);
 
   // Mock job data - in a real app this would come from API
   const mockJobs = [
@@ -115,13 +119,22 @@ export default function JobsPage() {
   }, []);
 
   const handleLocationFilterChange = useCallback((data: any) => {
-    setLocationData(data);
+    console.log('📍 Jobs location filter change requested:', {
+      new: data,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Only update radius if it has changed
+    if (data.radius !== locationData.radius) {
+      updateRadius(data.radius);
+    }
+    
     // In a real app, you would filter jobs based on location here
     // For now, we'll use the existing location text filter
     if (data?.location) {
       setLocationFilter(data.location);
     }
-  }, []);
+  }, [locationData.radius, updateRadius]);
 
   const filteredJobs = jobs.filter((job: Job) => {
     const matchesSearch = !searchQuery || 
@@ -196,6 +209,7 @@ export default function JobsPage() {
           <div className="lg:col-span-1">
             <LocationFilter
               onFilterChange={handleLocationFilterChange}
+              defaultRadius={locationData.radius || 20}
               compact={true}
             />
           </div>

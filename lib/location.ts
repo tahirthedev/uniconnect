@@ -113,20 +113,33 @@ export const saveLocationToStorage = (location: LocationData): void => {
 };
 
 export const getLocationFromStorage = (): LocationData | null => {
+  console.log('💾 getLocationFromStorage called');
   try {
     const location = localStorage.getItem('userLocation');
     const timestamp = localStorage.getItem('locationTimestamp');
     
-    if (!location || !timestamp) return null;
+    console.log('💾 Storage contents:', { location, timestamp });
     
-    // Check if location is older than 1 hour
-    const hourInMs = 60 * 60 * 1000;
-    if (Date.now() - parseInt(timestamp) > hourInMs) {
+    if (!location || !timestamp) {
+      console.log('💾 No location or timestamp found in storage');
       return null;
     }
     
-    return JSON.parse(location);
-  } catch {
+    // Check if location is older than 1 hour
+    const hourInMs = 60 * 60 * 1000;
+    const age = Date.now() - parseInt(timestamp);
+    console.log('💾 Location age:', age, 'ms (limit:', hourInMs, 'ms)');
+    
+    if (age > hourInMs) {
+      console.log('💾 Location expired, returning null');
+      return null;
+    }
+    
+    const parsedLocation = JSON.parse(location);
+    console.log('💾 Returning cached location:', parsedLocation);
+    return parsedLocation;
+  } catch (error) {
+    console.log('💾 Error reading from storage:', error);
     return null;
   }
 };
@@ -134,4 +147,41 @@ export const getLocationFromStorage = (): LocationData | null => {
 export const clearLocationFromStorage = (): void => {
   localStorage.removeItem('userLocation');
   localStorage.removeItem('locationTimestamp');
+};
+
+// Get cached location only - does not fetch new location
+export const getCachedLocationOnly = (): LocationData | null => {
+  console.log('🔍 getCachedLocationOnly called');
+  const result = getLocationFromStorage();
+  console.log('🔍 getCachedLocationOnly returning:', result);
+  return result;
+};
+
+// Get location with automatic fallback to cache or fresh fetch
+export const getLocationWithCache = async (forceRefresh: boolean = false): Promise<LocationData | null> => {
+  // If not forcing refresh, try cache first
+  if (!forceRefresh) {
+    const cached = getLocationFromStorage();
+    if (cached) {
+      return cached;
+    }
+  }
+
+  // Only fetch fresh location if cache is empty or force refresh is requested
+  try {
+    const coords = await getCurrentLocation();
+    const addressInfo = await reverseGeocode(coords.latitude, coords.longitude);
+    
+    const fullLocation: LocationData = {
+      ...coords,
+      ...addressInfo
+    };
+
+    saveLocationToStorage(fullLocation);
+    return fullLocation;
+  } catch (error) {
+    console.error('Failed to get fresh location:', error);
+    // If fresh fetch fails, return cached location as fallback
+    return getLocationFromStorage();
+  }
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/navigation';
 import { Button } from '@/components/ui/button';
@@ -26,22 +26,38 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import LocationFilter from '@/components/location-filter';
+import { useLocationData, useLocation } from '@/contexts/LocationContext';
 
 export default function AccommodationPage() {
+  // Global location state
+  const locationData = useLocationData();
+  const { updateRadius } = useLocation();
+  
   const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [locationData, setLocationData] = useState<any>(null);
   const [filters, setFilters] = useState({
     priceRange: 'all',
     accommodationType: 'all',
     location: 'all'
   });
 
+  useEffect(() => {
+    console.log('🔄 AccommodationPage useEffect triggered:', {
+      locationData: {
+        lat: locationData.lat,
+        lng: locationData.lng,
+        radius: locationData.radius,
+        hasLocation: locationData.hasLocation
+      },
+      timestamp: new Date().toISOString()
+    });
+    fetchAccommodationPosts();
+  }, [locationData.lat, locationData.lng, locationData.radius, locationData.hasLocation]);
+
   const fetchAccommodationPosts = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      
       // Build API parameters
       const params: any = { category: 'accommodation' };
       
@@ -56,21 +72,28 @@ export default function AccommodationPage() {
       
       if (response && response.posts) {
         setPosts(response.posts);
+      } else {
+        setPosts([]); // Set empty array if no posts
       }
     } catch (error) {
       console.error('Error fetching accommodation posts:', error);
+      setPosts([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
-  }, [locationData?.lat, locationData?.lng, locationData?.radius]); // Add dependencies
-
-  useEffect(() => {
-    fetchAccommodationPosts();
-  }, [fetchAccommodationPosts]); // ✅ Depend on the memoized function
+  }, []); // No dependencies
 
   const handleLocationFilterChange = useCallback((data: any) => {
-    setLocationData(data);
-  }, []);
+    console.log('📍 Accommodation location filter change requested:', {
+      new: data,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Only update radius if it has changed
+    if (data.radius !== locationData.radius) {
+      updateRadius(data.radius);
+    }
+  }, [locationData.radius, updateRadius]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,6 +162,7 @@ export default function AccommodationPage() {
           <div className="lg:col-span-1">
             <LocationFilter
               onFilterChange={handleLocationFilterChange}
+              defaultRadius={locationData.radius || 20}
               compact={true}
             />
           </div>

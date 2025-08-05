@@ -41,9 +41,6 @@ export default function Navigation() {
             
             {isLoggedIn && (
               <>
-                <Link href="/bookings" className="text-gray-700 hover:text-orange-600 font-medium">
-                  My Bookings
-                </Link>
                 <Link href="/messages" className="text-gray-700 hover:text-orange-600 font-medium">
                   Messages
                 </Link>
@@ -89,9 +86,6 @@ export default function Navigation() {
               
               {isLoggedIn ? (
                 <>
-                  <Link href="/bookings" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">
-                    My Bookings
-                  </Link>
                   <Link href="/messages" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">
                     Messages
                   </Link>

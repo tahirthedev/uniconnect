@@ -3,10 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MapPin, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import { 
-  getCurrentLocation, 
-  reverseGeocode, 
+  getLocationWithCache,
+  getCachedLocationOnly,
   saveLocationToStorage, 
-  getLocationFromStorage,
   LocationData 
 } from '@/lib/location';
 
@@ -32,32 +31,34 @@ export default function LocationDisplay({
 
   useEffect(() => {
     // Try to get location from storage first
-    const savedLocation = getLocationFromStorage();
+    const savedLocation = getCachedLocationOnly();
     if (savedLocation) {
       setLocation(savedLocation);
       memoizedOnLocationUpdate(savedLocation);
     } else {
-      // Auto-detect location on first visit
+      // Auto-detect location on first visit (homepage only)
       handleGetLocation();
     }
   }, []); // Remove onLocationUpdate from dependencies to prevent infinite loop
 
-  const handleGetLocation = async () => {
+  const handleGetLocation = async (forceRefresh: boolean = false) => {
     setLoading(true);
     setError(null);
 
     try {
-      const coords = await getCurrentLocation();
-      const addressInfo = await reverseGeocode(coords.latitude, coords.longitude);
+      const fullLocation = await getLocationWithCache(forceRefresh);
       
-      const fullLocation: LocationData = {
-        ...coords,
-        ...addressInfo
-      };
-
-      setLocation(fullLocation);
-      saveLocationToStorage(fullLocation);
-      memoizedOnLocationUpdate(fullLocation);
+      if (fullLocation) {
+        setLocation(fullLocation);
+        memoizedOnLocationUpdate(fullLocation);
+        
+        // Notify other components that location was updated
+        window.dispatchEvent(new CustomEvent('locationUpdated', { 
+          detail: fullLocation 
+        }));
+      } else {
+        setError('Failed to get location');
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to get location');
     } finally {
@@ -84,7 +85,7 @@ export default function LocationDisplay({
           <span>{location.city || 'Unknown City'}</span>
         ) : (
           <button 
-            onClick={handleGetLocation}
+            onClick={() => handleGetLocation(true)}
             className="text-orange-600 hover:text-orange-700 underline"
           >
             Enable Location
@@ -99,7 +100,7 @@ export default function LocationDisplay({
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900">Your Location</h3>
         <button
-          onClick={handleGetLocation}
+          onClick={() => handleGetLocation(true)}
           disabled={loading}
           className="flex items-center space-x-1 px-3 py-1 text-sm bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 disabled:opacity-50"
         >
@@ -165,7 +166,7 @@ export default function LocationDisplay({
           <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-600 mb-4">Location not detected</p>
           <button
-            onClick={handleGetLocation}
+            onClick={() => handleGetLocation(true)}
             className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 mx-auto"
           >
             <MapPin className="h-4 w-4" />
