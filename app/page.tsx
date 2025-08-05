@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Search,
   MapPin,
@@ -10,27 +12,23 @@ import {
   Clock,
   ArrowRight,
   Filter,
+  Users,
+  Star,
 } from "lucide-react"
 import Navigation from "@/components/navigation"
 import BackendStatus from "@/components/backend-status"
 import SearchForm from "@/components/search-form"
+import LocationDisplay from "@/components/location-display"
 import Link from "next/link"
 
 export default function HomePage() {
   const categories = [
     {
-      name: "Ridesharing",
+      name: "Pick & Drop",
       icon: Car,
       color: "bg-orange-100 text-orange-600",
       href: "/ridesharing",
       count: "1.2k active",
-    },
-    {
-      name: "Pick & Drop",
-      icon: Package,
-      color: "bg-blue-100 text-blue-600",
-      href: "/pick-drop",
-      count: "856 services",
     },
     { name: "Jobs", icon: Briefcase, color: "bg-green-100 text-green-600", href: "/jobs", count: "2.3k openings" },
     {
@@ -60,7 +58,7 @@ export default function HomePage() {
     {
       id: 1,
       title: "Daily commute Central London → UCL",
-      category: "Ridesharing",
+      category: "Pick & Drop",
       price: "£8/day",
       location: "London",
       time: "5 min ago",
@@ -117,66 +115,183 @@ export default function HomePage() {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
 
-      {/* Hero Section - More App-like */}
-      <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            <div>
-              <h1 className="text-3xl md:text-5xl font-bold mb-4">
-                Your Community <br />
-                <span className="text-orange-200">Marketplace</span>
-              </h1>
-              <p className="text-lg mb-6 text-orange-100">Connect with students across UK universities</p>
-
-              {/* Quick Search */}
-              <SearchForm />
-            </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 gap-4">
-              {quickStats.map((stat, index) => (
-                <div key={index} className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <div className="text-orange-200 text-sm">{stat.label}</div>
-                  <div className="text-green-300 text-xs mt-1">{stat.trend}</div>
+      {/* Hero Section - Modern with Location */}
+      <div className="bg-gradient-to-br from-orange-500 via-orange-600 to-red-600 text-white relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-black/10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'%3E%3Cpath d='m0 40l40-40h-40v40zm40 0v-40h-40l40 40z'/%3E%3C/g%3E%3C/svg%3E")`,
+          }}></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 relative">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left Side - Content */}
+            <div className="space-y-8">
+              <div className="space-y-6">
+                <div className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Location-based marketplace
                 </div>
-              ))}
+                
+                <h1 className="text-4xl md:text-6xl font-bold leading-tight">
+                  Find everything
+                  <span className="block text-orange-200">near you</span>
+                </h1>
+                
+                <p className="text-xl md:text-2xl text-orange-100 leading-relaxed">
+                  Connect with your local community. From rides to accommodation, jobs to marketplace - all within your neighborhood.
+                </p>
+              </div>
+
+              {/* Enhanced Search */}
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+                <SearchForm />
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {["Near me", "University rides", "Student housing", "Part-time jobs"].map((tag) => (
+                    <span key={tag} className="px-3 py-1 bg-white/20 rounded-full text-sm">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {quickStats.map((stat, index) => (
+                  <div key={index} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                    <div className="text-2xl font-bold">{stat.value}</div>
+                    <div className="text-orange-200 text-sm">{stat.label}</div>
+                    <div className="text-green-300 text-xs mt-1">{stat.trend}</div>
+                  </div>
+                ))}
+              </div>
             </div>
+
+            {/* Right Side - Location & Visual */}
+            <div className="space-y-6">
+              {/* Location Display */}
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Your Location</h3>
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                </div>
+                <LocationDisplay 
+                  onLocationUpdate={(location) => {
+                    console.log('Location updated:', location);
+                    (window as any).userLocation = location;
+                  }}
+                />
+              </div>
+
+              {/* Community Highlights */}
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+                <h3 className="text-lg font-semibold mb-4">Live Activity</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-orange-400 rounded-full flex items-center justify-center">
+                      <Car className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">3 new rides available</p>
+                      <p className="text-xs text-orange-200">Within 5km of you</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center">
+                      <Home className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">12 rooms posted today</p>
+                      <p className="text-xs text-orange-200">In your area</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-green-400 rounded-full flex items-center justify-center">
+                      <Briefcase className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">8 job openings</p>
+                      <p className="text-xs text-orange-200">Near universities</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Floating Action Hint */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+          <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 flex items-center space-x-2 border border-white/30">
+            <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
+            <span className="text-sm text-white/90">Scroll to explore categories</span>
           </div>
         </div>
       </div>
 
       {/* Categories Section - Enhanced */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Browse Categories</h2>
-            <p className="text-gray-600">Find exactly what you're looking for</p>
+      <div className="bg-gray-50 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Discover What's <span className="text-orange-600">Around You</span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Your neighborhood marketplace connects you with everything you need, from quick rides to your next home.
+            </p>
           </div>
-          <Link href="/categories" className="text-orange-600 hover:text-orange-700 font-medium flex items-center">
-            View All <ArrowRight className="ml-1 h-4 w-4" />
-          </Link>
-        </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {categories.map((category) => {
-            const IconComponent = category.icon
-            return (
-              <Link
-                key={category.name}
-                href={category.href}
-                className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all cursor-pointer group hover:-translate-y-1"
-              >
-                <div
-                  className={`w-12 h-12 rounded-lg ${category.color} flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform`}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 max-w-5xl mx-auto">
+            {categories.map((category) => {
+              const IconComponent = category.icon
+              return (
+                <Link
+                  key={category.name}
+                  href={category.href}
+                  className="group bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-2 border border-gray-100"
                 >
-                  <IconComponent className="h-6 w-6" />
-                </div>
-                <h3 className="text-sm font-semibold text-gray-900 text-center mb-1">{category.name}</h3>
-                <p className="text-xs text-gray-500 text-center">{category.count}</p>
-              </Link>
-            )
-          })}
+                  <div
+                    className={`w-16 h-16 rounded-2xl ${category.color} flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300`}
+                  >
+                    <IconComponent className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-base font-bold text-gray-900 text-center mb-2">{category.name}</h3>
+                  <p className="text-sm text-gray-500 text-center">{category.count}</p>
+                  
+                  {/* Activity indicator */}
+                  <div className="mt-3 flex justify-center">
+                    <div className="w-2 h-2 bg-green-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+
+          {/* Trust indicators */}
+          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MapPin className="h-6 w-6 text-green-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Location Verified</h3>
+              <p className="text-gray-600 text-sm">All listings are verified within your local area</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Community Driven</h3>
+              <p className="text-gray-600 text-sm">Built by students, for students across UK universities</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Star className="h-6 w-6 text-orange-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Trusted Reviews</h3>
+              <p className="text-gray-600 text-sm">Real reviews from real community members</p>
+            </div>
+          </div>
         </div>
       </div>
 

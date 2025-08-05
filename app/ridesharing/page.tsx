@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/navigation';
+import LocationFilter from '@/components/location-filter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,9 +18,11 @@ import {
   Plus, 
   Filter 
 } from 'lucide-react';
-import { apiClient } from '@/lib/api';
+import { ApiClient } from '@/lib/api';
 import BookingModal from '@/components/booking-modal';
 import MessagingModal from '@/components/messaging-modal';
+
+const apiClient = new ApiClient();
 
 interface Ride {
   _id: string;
@@ -46,11 +49,18 @@ export default function RidesharingPage() {
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showMessagingModal, setShowMessagingModal] = useState(false);
+  const [locationBased, setLocationBased] = useState(false);
   const [filters, setFilters] = useState({
     from: '',
     to: '',
     date: '',
     maxPrice: ''
+  });
+  const [locationFilter, setLocationFilter] = useState({
+    lat: undefined as number | undefined,
+    lng: undefined as number | undefined,
+    radius: undefined as number | undefined,
+    hasLocation: false
   });
 
   // Sample UK university ridesharing data
@@ -111,13 +121,26 @@ export default function RidesharingPage() {
 
   useEffect(() => {
     fetchRides();
-  }, []);
+  }, [filters, locationFilter]);
 
   const fetchRides = async () => {
+    setLoading(true);
     try {
-      // Try to fetch from backend, fallback to sample data
-      const response = await apiClient.getPosts();
-      const rideData = response.posts?.filter((post: any) => post.category === 'ridesharing') || [];
+      const params: any = { category: 'pick-drop' }; // Use pick-drop category
+      
+      // Add location parameters if available
+      if (locationFilter.hasLocation && locationFilter.lat && locationFilter.lng) {
+        params.lat = locationFilter.lat;
+        params.lng = locationFilter.lng;
+        params.radius = locationFilter.radius || 20;
+      }
+      
+      // Add other filters
+      if (filters.maxPrice) params.priceMax = parseFloat(filters.maxPrice);
+      
+      const response = await apiClient.getPosts(params);
+      const rideData = response.posts || [];
+      setLocationBased(response.locationBased || false);
       
       if (rideData.length === 0) {
         // Use sample data if no backend data
@@ -151,6 +174,10 @@ export default function RidesharingPage() {
       setLoading(false);
     }
   };
+
+  const handleLocationFilterChange = useCallback((newLocationFilter: any) => {
+    setLocationFilter(newLocationFilter);
+  }, []);
 
   const getPriceValue = (price: number | { amount: number; type: string; currency: string }): number => {
     return typeof price === 'object' ? price.amount : price;
@@ -287,8 +314,19 @@ export default function RidesharingPage() {
               <ArrowLeft className="h-6 w-6 text-gray-600 hover:text-orange-600" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Ridesharing</h1>
-              <p className="text-gray-600">Find or offer rides across UK universities</p>
+              <h1 className="text-3xl font-bold text-gray-900">Pick & Drop</h1>
+              <div className="flex items-center space-x-2 text-gray-600">
+                <p>Find or offer rides across UK universities</p>
+                {locationBased && (
+                  <>
+                    <span>•</span>
+                    <div className="flex items-center space-x-1">
+                      <MapPin className="h-4 w-4 text-green-600" />
+                      <span className="text-sm text-green-600">Showing nearby rides ({locationFilter.radius || 20}km radius)</span>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex gap-3">
@@ -313,7 +351,16 @@ export default function RidesharingPage() {
         {showFilters && (
           <Card className="mb-6">
             <CardContent className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                {/* Location Filter */}
+                <div className="md:col-span-1">
+                  <LocationFilter 
+                    onFilterChange={handleLocationFilterChange}
+                    defaultRadius={20}
+                    compact={true}
+                  />
+                </div>
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">From</label>
                   <input

@@ -127,7 +127,7 @@ messageSchema.methods.softDelete = function(deletedBy) {
 // Static method to get conversation between two users
 messageSchema.statics.getConversation = function(user1Id, user2Id, limit = 50, skip = 0) {
   const participants = [user1Id.toString(), user2Id.toString()].sort();
-  const conversationId = participants.join('-');
+  const conversationId = participants.join('_');
   
   return this.find({
     conversationId: conversationId,
@@ -147,8 +147,8 @@ messageSchema.statics.getUserConversations = function(userId) {
     {
       $match: {
         $or: [
-          { sender: mongoose.Types.ObjectId(userId) },
-          { receiver: mongoose.Types.ObjectId(userId) }
+          { sender: new mongoose.Types.ObjectId(userId) },
+          { receiver: new mongoose.Types.ObjectId(userId) }
         ],
         isDeleted: false
       }
@@ -165,7 +165,7 @@ messageSchema.statics.getUserConversations = function(userId) {
             $cond: [
               {
                 $and: [
-                  { $eq: ['$receiver', mongoose.Types.ObjectId(userId)] },
+                  { $eq: ['$receiver', new mongoose.Types.ObjectId(userId)] },
                   { $ne: ['$status', 'read'] }
                 ]
               },
@@ -196,7 +196,7 @@ messageSchema.statics.getUserConversations = function(userId) {
       $addFields: {
         otherUser: {
           $cond: [
-            { $eq: ['$lastMessage.sender', mongoose.Types.ObjectId(userId)] },
+            { $eq: ['$lastMessage.sender', new mongoose.Types.ObjectId(userId)] },
             { $arrayElemAt: ['$receiverInfo', 0] },
             { $arrayElemAt: ['$senderInfo', 0] }
           ]

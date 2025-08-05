@@ -1,20 +1,38 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ArrowLeft, MapPin, Clock, Briefcase, Building, Users, BookOpen, Search } from "lucide-react";
 import Navigation from "@/components/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import LocationFilter from "@/components/location-filter";
+
+interface Job {
+  id: number;
+  title: string;
+  company: string;
+  location: string;
+  type: string;
+  salary: string;
+  posted: string;
+  description: string;
+  requirements: string[];
+  logo: string;
+  urgent?: boolean;
+}
 
 export default function JobsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [locationData, setLocationData] = useState<any>(null);
 
-  const jobs = [
+  // Mock job data - in a real app this would come from API
+  const mockJobs = [
     {
       id: 1,
       title: "Frontend React Developer",
@@ -91,10 +109,21 @@ export default function JobsPage() {
   ];
 
   useEffect(() => {
+    // Initialize with mock data - in real app would fetch from API
+    setJobs(mockJobs);
     setLoading(false);
   }, []);
 
-  const filteredJobs = jobs.filter(job => {
+  const handleLocationFilterChange = useCallback((data: any) => {
+    setLocationData(data);
+    // In a real app, you would filter jobs based on location here
+    // For now, we'll use the existing location text filter
+    if (data?.location) {
+      setLocationFilter(data.location);
+    }
+  }, []);
+
+  const filteredJobs = jobs.filter((job: Job) => {
     const matchesSearch = !searchQuery || 
       job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -162,40 +191,46 @@ export default function JobsPage() {
         </div>
 
         {/* Search and Filters */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                  <input
-                    type="text"
-                    placeholder="Search jobs, companies, or skills..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                  />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+          {/* Location Filter */}
+          <div className="lg:col-span-1">
+            <LocationFilter
+              onFilterChange={handleLocationFilterChange}
+              compact={true}
+            />
+          </div>
+
+          {/* Search and Type Filters */}
+          <div className="lg:col-span-3">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                      <input
+                        type="text"
+                        placeholder="Search jobs, companies, or skills..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <select
+                    value={typeFilter}
+                    onChange={(e) => setTypeFilter(e.target.value)}
+                    className="px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                  >
+                    {jobTypes.map(type => (
+                      <option key={type.value} value={type.value}>{type.label}</option>
+                    ))}
+                  </select>
                 </div>
-              </div>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-              >
-                {jobTypes.map(type => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
-                ))}
-              </select>
-              <input
-                type="text"
-                placeholder="Location..."
-                value={locationFilter}
-                onChange={(e) => setLocationFilter(e.target.value)}
-                className="px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-              />
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
         {/* Results */}
         <div className="space-y-4">
@@ -255,7 +290,7 @@ export default function JobsPage() {
                         <p className="text-gray-700 mb-3">{job.description}</p>
                         
                         <div className="flex flex-wrap gap-2">
-                          {job.requirements.map((req, index) => (
+                          {job.requirements.map((req: string, index: number) => (
                             <Badge key={index} variant="outline" className="text-xs">
                               {req}
                             </Badge>

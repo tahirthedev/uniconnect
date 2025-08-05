@@ -63,7 +63,26 @@ export default function AuthPage() {
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      const errorMessage = error.response?.data?.message || error.message || `${isLogin ? 'Login' : 'Registration'} failed. Please try again.`;
+      // The API client stores the server error message in error.message
+      let errorMessage = error.message || `${isLogin ? 'Login' : 'Registration'} failed. Please try again.`;
+      
+      // Provide user-friendly messages for common errors
+      if (errorMessage.includes('User already exists')) {
+        errorMessage = 'An account with this email already exists. Please try logging in instead or use a different email.';
+        // Automatically switch to login mode for better UX
+        if (!isLogin) {
+          setTimeout(() => {
+            if (confirm('Would you like to switch to login mode?')) {
+              setIsLogin(true);
+            }
+          }, 2000);
+        }
+      } else if (errorMessage.includes('Invalid credentials')) {
+        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+      } else if (errorMessage.includes('Validation errors')) {
+        errorMessage = 'Please check your information and ensure all fields are filled correctly.';
+      }
+      
       alert(errorMessage);
     } finally {
       setLoading(false);

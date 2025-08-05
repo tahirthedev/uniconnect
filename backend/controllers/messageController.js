@@ -11,6 +11,16 @@ const sendMessage = async (req, res) => {
     const { messageBody, messageType = 'text', relatedPost, attachments } = req.body;
     const senderId = req.user._id;
 
+    // Debug logging
+    console.log('Received message data:', {
+      receiverId,
+      messageBody,
+      messageType,
+      relatedPost,
+      attachments,
+      rawBody: req.body
+    });
+
     // Check if receiver exists
     const receiver = await User.findById(receiverId);
     if (!receiver) {
@@ -39,11 +49,15 @@ const sendMessage = async (req, res) => {
     // Content moderation check
     const contentAnalysis = detectFlaggedContent(messageBody);
 
+    // Generate conversation ID (consistent for both users)
+    const conversationId = [senderId.toString(), receiverId].sort().join('_');
+
     const messageData = {
       sender: senderId,
       receiver: receiverId,
       messageBody,
       messageType,
+      conversationId,
       status: 'sent'
     };
 
@@ -136,7 +150,7 @@ const getConversation = async (req, res) => {
 
     // Mark messages as read for the current user
     await Message.markConversationAsRead(
-      messages.length > 0 ? messages[0].conversationId : `${[currentUserId, userId].sort().join('-')}`,
+      messages.length > 0 ? messages[0].conversationId : `${[currentUserId, userId].sort().join('_')}`,
       currentUserId
     );
 

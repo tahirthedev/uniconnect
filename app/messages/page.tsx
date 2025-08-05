@@ -1,217 +1,215 @@
-import { Search, Send, MoreVertical, Phone, Video } from "lucide-react"
-import Navigation from "@/components/navigation"
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Search, MessageCircle, User, Clock } from "lucide-react";
+import Navigation from "@/components/navigation";
+import MessagingModal from '@/components/messaging-modal';
+import { apiClient } from '@/lib/api';
+
+interface ConversationUser {
+  _id: string;
+  name: string;
+  avatar?: string;
+}
+
+interface Conversation {
+  _id: string;
+  otherUser: ConversationUser;
+  lastMessage: {
+    messageBody: string;
+    createdAt: string;
+    sender: string;
+  };
+  unreadCount: number;
+}
 
 export default function MessagesPage() {
-  const conversations = [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      lastMessage: "Sure, I can pick you up at 8 AM tomorrow",
-      time: "2m ago",
-      unread: 2,
-      avatar: "/placeholder.svg?height=40&width=40",
-      online: true,
-    },
-    {
-      id: 2,
-      name: "Mike Chen",
-      lastMessage: "The MacBook is still available if you're interested",
-      time: "1h ago",
-      unread: 0,
-      avatar: "/placeholder.svg?height=40&width=40",
-      online: false,
-    },
-    {
-      id: 3,
-      name: "Emma Wilson",
-      lastMessage: "Thanks for the quick response!",
-      time: "3h ago",
-      unread: 1,
-      avatar: "/placeholder.svg?height=40&width=40",
-      online: true,
-    },
-    {
-      id: 4,
-      name: "David Rodriguez",
-      lastMessage: "Can we schedule an interview for next week?",
-      time: "1d ago",
-      unread: 0,
-      avatar: "/placeholder.svg?height=40&width=40",
-      online: false,
-    },
-  ]
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedConversation, setSelectedConversation] = useState<ConversationUser | null>(null);
+  const [showMessagingModal, setShowMessagingModal] = useState(false);
 
-  const currentMessages = [
-    {
-      id: 1,
-      sender: "Sarah Johnson",
-      message: "Hi! I saw your post about daily commute sharing. Are you still looking for someone?",
-      time: "10:30 AM",
-      isOwn: false,
-    },
-    {
-      id: 2,
-      sender: "You",
-      message: "Yes, absolutely! I leave downtown around 8 AM every weekday. Would that work for you?",
-      time: "10:32 AM",
-      isOwn: true,
-    },
-    {
-      id: 3,
-      sender: "Sarah Johnson",
-      message: "Perfect! That timing works great for me. What's the cost sharing arrangement?",
-      time: "10:35 AM",
-      isOwn: false,
-    },
-    {
-      id: 4,
-      sender: "You",
-      message: "I was thinking $15 per day, which covers gas and parking. Does that sound fair?",
-      time: "10:37 AM",
-      isOwn: true,
-    },
-    {
-      id: 5,
-      sender: "Sarah Johnson",
-      message: "Sure, I can pick you up at 8 AM tomorrow",
-      time: "10:40 AM",
-      isOwn: false,
-    },
-  ]
+  useEffect(() => {
+    loadConversations();
+  }, []);
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
+  const loadConversations = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden h-[calc(100vh-200px)]">
-          <div className="flex h-full">
-            {/* Conversations List */}
-            <div className="w-full md:w-1/3 border-r border-gray-200 flex flex-col">
-              {/* Header */}
-              <div className="p-4 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Messages</h2>
+    try {
+      const response = await apiClient.getConversations();
+      setConversations(response.conversations || []);
+    } catch (error) {
+      console.error('Failed to load conversations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input
-                    type="text"
-                    placeholder="Search conversations..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm"
-                  />
-                </div>
-              </div>
+  const handleConversationClick = (otherUser: ConversationUser) => {
+    setSelectedConversation(otherUser);
+    setShowMessagingModal(true);
+  };
 
-              {/* Conversations */}
-              <div className="flex-1 overflow-y-auto">
-                {conversations.map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                      conversation.id === 1 ? "bg-orange-50 border-l-4 border-l-orange-500" : ""
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="relative">
-                        <img
-                          src={conversation.avatar || "/placeholder.svg"}
-                          alt={conversation.name}
-                          className="w-10 h-10 rounded-full"
-                        />
-                        {conversation.online && (
-                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                        )}
-                      </div>
+  const filteredConversations = conversations.filter(conv =>
+    conv.otherUser.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-sm font-medium text-gray-900 truncate">{conversation.name}</h3>
-                          <span className="text-xs text-gray-500">{conversation.time}</span>
-                        </div>
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
 
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm text-gray-600 truncate">{conversation.lastMessage}</p>
-                          {conversation.unread > 0 && (
-                            <span className="bg-orange-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                              {conversation.unread}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInDays === 1) return 'Yesterday';
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+    return date.toLocaleDateString();
+  };
 
-            {/* Chat Area */}
-            <div className="hidden md:flex md:w-2/3 flex-col">
-              {/* Chat Header */}
-              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="relative">
-                    <img
-                      src="/placeholder.svg?height=40&width=40"
-                      alt="Sarah Johnson"
-                      className="w-10 h-10 rounded-full"
-                    />
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-900">Sarah Johnson</h3>
-                    <p className="text-sm text-green-600">Online</p>
-                  </div>
-                </div>
+  const truncateMessage = (message: string, maxLength: number = 50) => {
+    return message.length > maxLength ? message.substring(0, maxLength) + '...' : message;
+  };
 
-                <div className="flex items-center space-x-2">
-                  <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                    <Phone className="h-5 w-5" />
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                    <Video className="h-5 w-5" />
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                    <MoreVertical className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {currentMessages.map((message) => (
-                  <div key={message.id} className={`flex ${message.isOwn ? "justify-end" : "justify-start"}`}>
-                    <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        message.isOwn ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-900"
-                      }`}
-                    >
-                      <p className="text-sm">{message.message}</p>
-                      <p className={`text-xs mt-1 ${message.isOwn ? "text-orange-100" : "text-gray-500"}`}>
-                        {message.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Message Input */}
-              <div className="p-4 border-t border-gray-200">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    placeholder="Type your message..."
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                  />
-                  <button className="bg-orange-500 hover:bg-orange-600 text-white p-2 rounded-lg transition-colors">
-                    <Send className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
+  if (!localStorage.getItem('token')) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center py-12">
+            <MessageCircle className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">Please sign in</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              You need to be signed in to view your messages.
+            </p>
+            <div className="mt-6">
+              <button
+                onClick={() => window.location.href = '/auth'}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700"
+              >
+                Sign In
+              </button>
             </div>
           </div>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Messages</h1>
+          <p className="mt-2 text-gray-600">Stay connected with your UniConnect community</p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow">
+          {/* Search Header */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search conversations..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              />
+            </div>
+          </div>
+
+          {/* Conversations List */}
+          <div className="divide-y divide-gray-200">
+            {loading ? (
+              <div className="p-8 text-center">
+                <div className="text-gray-500">Loading conversations...</div>
+              </div>
+            ) : filteredConversations.length === 0 ? (
+              <div className="p-8 text-center">
+                <MessageCircle className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No conversations yet</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {searchTerm ? 'No conversations match your search.' : 'Start messaging from ride listings or marketplace items.'}
+                </p>
+              </div>
+            ) : (
+              filteredConversations.map((conversation) => (
+                <div
+                  key={conversation._id}
+                  onClick={() => handleConversationClick(conversation.otherUser)}
+                  className="p-6 hover:bg-gray-50 cursor-pointer transition-colors"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center">
+                        {conversation.otherUser.avatar ? (
+                          <img
+                            src={conversation.otherUser.avatar}
+                            alt={conversation.otherUser.name}
+                            className="h-12 w-12 rounded-full"
+                          />
+                        ) : (
+                          <User className="h-6 w-6 text-orange-600" />
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {conversation.otherUser.name}
+                        </p>
+                        <div className="flex items-center space-x-2">
+                          {conversation.unreadCount > 0 && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                              {conversation.unreadCount}
+                            </span>
+                          )}
+                          <p className="text-xs text-gray-500 flex items-center">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {formatTime(conversation.lastMessage.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-500 truncate">
+                        {truncateMessage(conversation.lastMessage.messageBody)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Messaging Modal */}
+      {selectedConversation && (
+        <MessagingModal
+          isOpen={showMessagingModal}
+          onClose={() => {
+            setShowMessagingModal(false);
+            setSelectedConversation(null);
+            // Reload conversations to update last message and unread count
+            loadConversations();
+          }}
+          recipientName={selectedConversation.name}
+          rideTitle="Direct Message"
+          recipientId={selectedConversation._id}
+        />
+      )}
     </div>
-  )
+  );
 }

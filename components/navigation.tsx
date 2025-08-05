@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Menu, X, User, LogOut } from "lucide-react"
 import Link from "next/link"
 import { isAuthenticated, getUserInfo, logout } from "@/lib/auth"
+import LocationDisplay from "@/components/location-display"
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
@@ -34,9 +35,10 @@ export default function Navigation() {
             <Link href="/posts" className="text-gray-700 hover:text-orange-600 font-medium">
               Browse
             </Link>
-            <Link href="/ridesharing" className="text-gray-700 hover:text-orange-600 font-medium">
-              Ridesharing
-            </Link>
+            
+            {/* Compact Location Indicator */}
+            <LocationDisplay compact={true} showMap={false} />
+            
             {isLoggedIn && (
               <>
                 <Link href="/bookings" className="text-gray-700 hover:text-orange-600 font-medium">
@@ -67,14 +69,6 @@ export default function Navigation() {
                 Sign In
               </Link>
             )}
-            
-            {isLoggedIn && (
-              <Link href="/ridesharing/offer">
-                <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                  Offer Ride
-                </button>
-              </Link>
-            )}
           </div>
 
           {/* Mobile menu button */}
@@ -91,9 +85,6 @@ export default function Navigation() {
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t">
               <Link href="/posts" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">
                 Browse
-              </Link>
-              <Link href="/ridesharing" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">
-                Ridesharing
               </Link>
               
               {isLoggedIn ? (
@@ -113,11 +104,6 @@ export default function Navigation() {
                   >
                     Logout
                   </button>
-                  <Link href="/ridesharing/offer">
-                    <button className="w-full text-left bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-lg font-medium transition-colors mt-2">
-                      Offer Ride
-                    </button>
-                  </Link>
                 </>
               ) : (
                 <Link href="/auth" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">

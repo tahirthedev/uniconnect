@@ -92,8 +92,34 @@ export class ApiClient {
   }
 
   // Posts endpoints
-  async getPosts() {
-    return this.request('/api/posts');
+  async getPosts(params?: {
+    category?: string;
+    city?: string;
+    priceMin?: number;
+    priceMax?: number;
+    page?: number;
+    limit?: number;
+    sort?: string;
+    lat?: number;
+    lng?: number;
+    radius?: number;
+  }) {
+    let endpoint = '/api/posts';
+    
+    if (params) {
+      const queryParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryParams.append(key, value.toString());
+        }
+      });
+      
+      if (queryParams.toString()) {
+        endpoint += `?${queryParams.toString()}`;
+      }
+    }
+    
+    return this.request(endpoint);
   }
 
   async createPost(postData: any) {
@@ -114,23 +140,18 @@ export class ApiClient {
   }
 
   async sendMessage(receiverId: string, messageData: any) {
-    const token = localStorage.getItem('token');
     return this.request(`/api/messages/to/${receiverId}`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
       body: JSON.stringify(messageData),
     });
   }
 
   async getConversation(userId: string) {
-    const token = localStorage.getItem('token');
-    return this.request(`/api/messages/conversation/${userId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    return this.request(`/api/messages/conversation/${userId}`);
+  }
+
+  async getConversations() {
+    return this.request('/api/messages');
   }
 
   // Booking endpoints

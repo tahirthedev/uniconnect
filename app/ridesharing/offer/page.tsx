@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/navigation';
+import LocationSelector from '@/components/location-selector';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -17,7 +18,9 @@ import {
   Mail,
   MessageCircle
 } from 'lucide-react';
-import { apiClient } from '@/lib/api';
+import { ApiClient } from '@/lib/api';
+
+const apiClient = new ApiClient();
 
 export default function OfferRidePage() {
   const [formData, setFormData] = useState({
@@ -33,6 +36,7 @@ export default function OfferRidePage() {
     phone: '',
     email: ''
   });
+  const [location, setLocation] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -176,8 +180,13 @@ export default function OfferRidePage() {
       const postData: any = {
         title: formData.title,
         description: formData.description,
-        category: 'ridesharing',
-        location: {
+        category: 'pick-drop', // Updated category name
+        location: location ? {
+          city: location.city,
+          state: location.state || '',
+          country: location.country || 'UK',
+          coordinates: location.coordinates || null
+        } : {
           city: formData.pickup,
           state: 'UK',
           country: 'United Kingdom'
@@ -357,6 +366,17 @@ export default function OfferRidePage() {
                     {formData.description.length}/2000
                   </span>
                 </div>
+              </div>
+
+              {/* Location Selector */}
+              <div>
+                <LocationSelector
+                  onLocationSelect={setLocation}
+                  defaultLocation={location}
+                  showMap={false}
+                  compact={false}
+                  required={false}
+                />
               </div>
 
               {/* Pickup and Destination */}

@@ -1,8 +1,18 @@
+'use client';
+
+import { useState, useCallback } from "react";
 import { ArrowLeft, ArrowUpDown, MapPin, Clock, TrendingUp, Calculator, User, Star, Shield } from "lucide-react"
 import Navigation from "@/components/navigation"
 import Link from "next/link"
+import LocationFilter from "@/components/location-filter"
 
 export default function CurrencyExchangePage() {
+  const [locationData, setLocationData] = useState<any>(null);
+
+  const handleLocationFilterChange = useCallback((data: any) => {
+    setLocationData(data);
+    // In a real app, you would filter exchanges based on location here
+  }, []);
   const exchanges = [
     {
       id: 1,
@@ -71,8 +81,17 @@ export default function CurrencyExchangePage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Exchange Calculator & Post */}
+          {/* Exchange Calculator & Location Filter */}
           <div className="lg:col-span-1">
+            {/* Location Filter */}
+            <div className="mb-6">
+              <LocationFilter
+                onFilterChange={handleLocationFilterChange}
+                compact={true}
+              />
+            </div>
+
+            {/* Exchange Calculator */}
             <div className="bg-white rounded-xl shadow-md p-6 mb-6">
               <h3 className="text-lg font-semibold mb-4 flex items-center">
                 <Calculator className="h-5 w-5 mr-2" />

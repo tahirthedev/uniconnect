@@ -43,7 +43,19 @@ const postSchema = new mongoose.Schema({
       latitude: { type: Number },
       longitude: { type: Number }
     },
-    address: { type: String, trim: true }
+    address: { type: String, trim: true },
+    // GeoJSON point for geospatial queries
+    geoLocation: {
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point'
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        index: '2dsphere'
+      }
+    }
   },
   author: {
     type: mongoose.Schema.Types.ObjectId,
@@ -252,8 +264,90 @@ postSchema.statics.searchPosts = function(query, filters = {}) {
   return searchQuery.sort({ priority: -1, createdAt: -1 });
 };
 
-// Pre-save middleware to auto-moderate
+// Find posts within a certain distance
+postSchema.statics.findNearby = function(longitude, latitude, maxDistance = 20000) {
+  return this.aggregate([
+    {
+      $geoNear: {
+        near: {
+          type: "Point",
+          coordinates: [longitude, latitude]
+        },
+        distanceField: "distance",
+        maxDistance: maxDistance, // in meters (20km = 20000m)
+        spherical: true,
+        query: { status: 'active' },
+        key: "location.geoLocation" // Explicitly specify the index to use
+      }
+    },
+    {
+      $addFields: {
+        distanceKm: { $round: [{ $divide: ["$distance", 1000] }, 2] }
+      }
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'author',
+        foreignField: '_id',
+        as: 'authorInfo'
+      }
+    },
+    {
+      $addFields: {
+        authorInfo: {
+          $cond: {
+            if: { $gt: [{ $size: "$authorInfo" }, 0] },
+            then: { $arrayElemAt: ["$authorInfo", 0] },
+            else: { name: "Anonymous", email: "", avatar: "" }
+          }
+        }
+      }
+    },
+    {
+      $project: {
+        title: 1,
+        description: 1,
+        category: 1,
+        subcategory: 1,
+        price: 1,
+        location: 1,
+        images: 1,
+        createdAt: 1,
+        distance: 1,
+        distanceKm: 1,
+        'authorInfo.name': 1,
+        'authorInfo.email': 1,
+        'authorInfo.avatar': 1
+      }
+    },
+    {
+      $sort: { distance: 1, createdAt: -1 }
+    }
+  ]);
+};
+
+// Pre-save middleware to auto-moderate and set geolocation
 postSchema.pre('save', function(next) {
+  // Only set geoLocation if we have valid coordinates
+  if (this.location && this.location.coordinates && 
+      this.location.coordinates.latitude && this.location.coordinates.longitude &&
+      !isNaN(this.location.coordinates.latitude) && !isNaN(this.location.coordinates.longitude)) {
+    
+    this.location.geoLocation = {
+      type: 'Point',
+      coordinates: [
+        parseFloat(this.location.coordinates.longitude),
+        parseFloat(this.location.coordinates.latitude)
+      ]
+    };
+  } else {
+    // Remove geoLocation if no valid coordinates to prevent index errors
+    if (this.location && this.location.geoLocation) {
+      this.location.geoLocation = undefined;
+    }
+  }
+
   if (this.isNew || this.isModified('title') || this.isModified('description')) {
     // Basic keyword detection for auto-flagging
     const flaggedKeywords = ['spam', 'scam', 'fake', 'fraud', 'inappropriate'];

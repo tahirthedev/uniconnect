@@ -99,9 +99,60 @@ const getPosts = async (req, res) => {
       priceMax,
       page = 1,
       limit = 20,
-      sort = 'recent'
+      sort = 'recent',
+      lat,
+      lng,
+      radius = 20 // radius in kilometers
     } = req.query;
 
+    // If location parameters are provided, use geospatial query
+    if (lat && lng) {
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(lng);
+      const maxDistance = parseFloat(radius) * 1000; // convert km to meters
+      
+      console.log(`🌍 Location-based query: lat=${latitude}, lng=${longitude}, radius=${radius}km`);
+
+      try {
+        let nearbyPosts = await Post.findNearby(longitude, latitude, maxDistance);
+        
+        // Apply additional filters
+        if (category) {
+          nearbyPosts = nearbyPosts.filter(post => post.category === category);
+        }
+        
+        if (priceMin || priceMax) {
+          nearbyPosts = nearbyPosts.filter(post => {
+            if (!post.price || !post.price.amount) return true;
+            const price = post.price.amount;
+            return (!priceMin || price >= parseFloat(priceMin)) && 
+                   (!priceMax || price <= parseFloat(priceMax));
+          });
+        }
+
+        // Pagination
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const paginatedPosts = nearbyPosts.slice(skip, skip + parseInt(limit));
+        
+        return res.json({
+          posts: paginatedPosts,
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(nearbyPosts.length / parseInt(limit)),
+            totalPosts: nearbyPosts.length,
+            hasNext: skip + parseInt(limit) < nearbyPosts.length,
+            hasPrev: parseInt(page) > 1
+          },
+          locationBased: true,
+          searchCenter: { latitude, longitude, radius }
+        });
+      } catch (geoError) {
+        console.error('Geospatial query failed, falling back to regular query:', geoError);
+        // Fall back to regular query if geospatial fails
+      }
+    }
+
+    // Regular query (fallback or when no location provided)
     const filters = {
       status: 'active',
       expiresAt: { $gt: new Date() }
