@@ -29,12 +29,33 @@ export default function MessagesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConversation, setSelectedConversation] = useState<ConversationUser | null>(null);
   const [showMessagingModal, setShowMessagingModal] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    loadConversations();
+    // Set client-side flag and check authentication
+    setIsClient(true);
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      setIsAuthenticated(!!token);
+    }
   }, []);
 
+  useEffect(() => {
+    if (isClient && isAuthenticated) {
+      loadConversations();
+    } else if (isClient) {
+      setLoading(false);
+    }
+  }, [isClient, isAuthenticated]);
+
   const loadConversations = async () => {
+    // Check if we're in the browser before accessing localStorage
+    if (typeof window === 'undefined') {
+      setLoading(false);
+      return;
+    }
+    
     const token = localStorage.getItem('token');
     if (!token) {
       setLoading(false);
@@ -80,7 +101,21 @@ export default function MessagesPage() {
     return message.length > maxLength ? message.substring(0, maxLength) + '...' : message;
   };
 
-  if (!localStorage.getItem('token')) {
+  if (!isClient) {
+    // Show loading during hydration
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center py-12">
+            <div className="text-gray-500">Loading...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navigation />
