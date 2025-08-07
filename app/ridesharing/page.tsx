@@ -23,62 +23,6 @@ import { useLocationData } from '@/contexts/LocationContext';
 
 const apiClient = new ApiClient();
 
-// Sample UK university ridesharing data - moved outside component to prevent re-creation
-const sampleRides: Ride[] = [
-  {
-    _id: '1',
-    title: 'London to Oxford Universities',
-    description: 'Regular trip between campuses, comfortable car with AC',
-    pickup: 'King\'s Cross Station',
-    destination: 'Oxford University',
-    date: '2025-01-15',
-    time: '09:00',
-    price: 20,
-    availableSeats: 3,
-    user: { name: 'Sarah Johnson', avatar: '/placeholder-user.jpg' },
-    createdAt: new Date().toISOString()
-  },
-  {
-    _id: '2',
-    title: 'Manchester to Liverpool Universities',
-    description: 'Weekend trip with stops at both universities',
-    pickup: 'Manchester City Centre',
-    destination: 'Liverpool University',
-    date: '2025-01-16',
-    time: '10:30',
-    price: 15,
-    availableSeats: 2,
-    user: { name: 'James Wilson', avatar: '/placeholder-user.jpg' },
-    createdAt: new Date().toISOString()
-  },
-  {
-    _id: '3',
-    title: 'Edinburgh to Glasgow Daily Commute',
-    description: 'Reliable daily service between campuses',
-    pickup: 'Edinburgh Waverley',
-    destination: 'Glasgow University',
-    date: '2025-01-17',
-    time: '07:45',
-    price: 12,
-    availableSeats: 1,
-    user: { name: 'Emma McKenzie', avatar: '/placeholder-user.jpg' },
-    createdAt: new Date().toISOString()
-  },
-  {
-    _id: '4',
-    title: 'Birmingham to Coventry Universities',
-    description: 'Daily commute, eco-friendly hybrid vehicle',
-    pickup: 'Birmingham New Street',
-    destination: 'University of Warwick',
-    date: '2025-01-18',
-    time: '08:15',
-    price: 8,
-    availableSeats: 2,
-    user: { name: 'Michael Davies', avatar: '/placeholder-user.jpg' },
-    createdAt: new Date().toISOString()
-  }
-];
-
 interface Ride {
   _id: string;
   title: string;
@@ -124,34 +68,29 @@ export default function RidesharingPage() {
       const rideData = response.posts || [];
       setLocationBased(response.locationBased || false);
       
-      if (rideData.length === 0) {
-        // Use sample data if no backend data
-        setRides(sampleRides);
-      } else {
-        // Transform backend data to match our interface
-        const transformedRides = rideData.map((post: any) => ({
-          _id: post._id,
-          title: post.title,
-          description: post.description,
-          pickup: post.details?.ride?.from || post.location?.city || '',
-          destination: post.details?.ride?.to || '',
-          date: post.details?.ride?.date ? new Date(post.details.ride.date).toISOString().split('T')[0] : '',
-          time: post.details?.ride?.time || '',
-          price: post.price,
-          availableSeats: post.details?.ride?.seats || 1,
-          user: {
-            _id: post.author?._id || post.author,
-            name: post.author?.name || 'Anonymous',
-            avatar: post.author?.avatar
-          },
-          createdAt: post.createdAt
-        }));
-        setRides(transformedRides);
-      }
+      // Transform backend data to match our interface
+      const transformedRides = rideData.map((post: any) => ({
+        _id: post._id,
+        title: post.title,
+        description: post.description,
+        pickup: post.details?.ride?.from || post.location?.city || '',
+        destination: post.details?.ride?.to || '',
+        date: post.details?.ride?.date ? new Date(post.details.ride.date).toISOString().split('T')[0] : '',
+        time: post.details?.ride?.time || '',
+        price: post.price,
+        availableSeats: post.details?.ride?.seats || 1,
+        user: {
+          _id: post.author?._id || post.author,
+          name: post.author?.name || 'Anonymous',
+          avatar: post.author?.avatar
+        },
+        createdAt: post.createdAt
+      }));
+      setRides(transformedRides);
     } catch (error) {
       console.error('Error fetching rides:', error);
-      // Fallback to sample data
-      setRides(sampleRides);
+      // Set empty array if backend fails
+      setRides([]);
     } finally {
       setLoading(false);
     }

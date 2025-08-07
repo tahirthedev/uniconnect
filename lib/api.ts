@@ -29,15 +29,6 @@ export class ApiClient {
         // Try to get error message from response
         try {
           const errorData = await response.json();
-          console.error('API error response:', errorData); // Log for debugging
-          
-          // Log detailed validation errors if they exist
-          if (errorData.errors && Array.isArray(errorData.errors)) {
-            console.error('Detailed validation errors:');
-            errorData.errors.forEach((error: any, index: number) => {
-              console.error(`${index + 1}. Field: ${error.path || error.param || 'unknown'}, Message: ${error.msg || error.message || JSON.stringify(error)}`);
-            });
-          }
           
           let errorMsg = errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
           if (errorData.errors && Array.isArray(errorData.errors)) {
@@ -55,7 +46,10 @@ export class ApiClient {
       
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      // Only log errors in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.error('API request failed:', error);
+      }
       throw error;
     }
   }
@@ -127,6 +121,10 @@ export class ApiClient {
       method: 'POST',
       body: JSON.stringify(postData),
     });
+  }
+
+  async getPost(postId: string) {
+    return this.request(`/api/posts/${postId}`);
   }
 
   // Messages endpoints

@@ -2,6 +2,7 @@ const Post = require('../models/Post');
 const User = require('../models/User');
 const { UserActivity } = require('../models/Analytics');
 const { detectFlaggedContent, shouldAutoFlag } = require('../utils/moderation');
+const { buildLocationQuery, addLocationMetadata, sortByLocationRelevance } = require('../utils/locationUtils');
 
 // Create a new post
 const createPost = async (req, res) => {
@@ -105,75 +106,40 @@ const getPosts = async (req, res) => {
       radius = 20 // radius in kilometers
     } = req.query;
 
-    // If location parameters are provided, use geospatial query
-    if (lat && lng) {
-      const latitude = parseFloat(lat);
-      const longitude = parseFloat(lng);
-      const maxDistance = parseFloat(radius) * 1000; // convert km to meters
-      
-      console.log(`🌍 Location-based query: lat=${latitude}, lng=${longitude}, radius=${radius}km`);
+    console.log('🔍 Posts API called with params:', { category, city, lat, lng, radius });
 
-      try {
-        let nearbyPosts = await Post.findNearby(longitude, latitude, maxDistance);
-        
-        // Apply additional filters
-        if (category) {
-          nearbyPosts = nearbyPosts.filter(post => post.category === category);
-        }
-        
-        if (priceMin || priceMax) {
-          nearbyPosts = nearbyPosts.filter(post => {
-            if (!post.price || !post.price.amount) return true;
-            const price = post.price.amount;
-            return (!priceMin || price >= parseFloat(priceMin)) && 
-                   (!priceMax || price <= parseFloat(priceMax));
-          });
-        }
+    // Build smart location query using new system
+    const locationResult = buildLocationQuery({ category, lat, lng, radius, city });
+    const { query: locationQuery, metadata: locationMetadata } = locationResult;
 
-        // Pagination
-        const skip = (parseInt(page) - 1) * parseInt(limit);
-        const paginatedPosts = nearbyPosts.slice(skip, skip + parseInt(limit));
-        
-        return res.json({
-          posts: paginatedPosts,
-          pagination: {
-            currentPage: parseInt(page),
-            totalPages: Math.ceil(nearbyPosts.length / parseInt(limit)),
-            totalPosts: nearbyPosts.length,
-            hasNext: skip + parseInt(limit) < nearbyPosts.length,
-            hasPrev: parseInt(page) > 1
-          },
-          locationBased: true,
-          searchCenter: { latitude, longitude, radius }
-        });
-      } catch (geoError) {
-        console.error('Geospatial query failed, falling back to regular query:', geoError);
-        // Fall back to regular query if geospatial fails
-      }
-    }
+    console.log('🌍 Location query built:', JSON.stringify(locationQuery, null, 2));
+    console.log('📊 Location metadata:', locationMetadata);
 
-    // Regular query (fallback or when no location provided)
-    const filters = {
+    // Base filters (always applied)
+    const baseFilters = {
       status: 'active',
       expiresAt: { $gt: new Date() }
     };
 
     // Apply category filter
     if (category) {
-      filters.category = category;
-    }
-
-    // Apply city filter
-    if (city) {
-      filters['location.city'] = new RegExp(city, 'i');
+      baseFilters.category = category;
     }
 
     // Apply price filters
     if (priceMin || priceMax) {
-      filters['price.amount'] = {};
-      if (priceMin) filters['price.amount'].$gte = parseFloat(priceMin);
-      if (priceMax) filters['price.amount'].$lte = parseFloat(priceMax);
+      baseFilters['price.amount'] = {};
+      if (priceMin) baseFilters['price.amount'].$gte = parseFloat(priceMin);
+      if (priceMax) baseFilters['price.amount'].$lte = parseFloat(priceMax);
     }
+
+    // Combine base filters with location query
+    const finalQuery = {
+      ...baseFilters,
+      ...locationQuery
+    };
+
+    console.log('🔎 Final MongoDB query:', JSON.stringify(finalQuery, null, 2));
 
     // Sorting options
     let sortOptions = {};
@@ -190,43 +156,75 @@ const getPosts = async (req, res) => {
       case 'popular':
         sortOptions = { views: -1, createdAt: -1 };
         break;
+      case 'location':
+        // Location-based sorting will be handled post-query
+        sortOptions = { createdAt: -1 };
+        break;
       default:
         sortOptions = { priority: -1, createdAt: -1 };
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
+    // Execute query
     const [posts, totalCount] = await Promise.all([
-      Post.find(filters)
+      Post.find(finalQuery)
         .populate('author', 'name avatar')
         .sort(sortOptions)
         .skip(skip)
         .limit(parseInt(limit))
         .lean(),
-      Post.countDocuments(filters)
+      Post.countDocuments(finalQuery)
     ]);
 
+    console.log(`📋 Found ${posts.length} posts (${totalCount} total)`);
+
     // Add like counts and user's like status
-    const postsWithLikes = posts.map(post => ({
+    let enhancedPosts = posts.map(post => ({
       ...post,
       likeCount: post.likes ? post.likes.length : 0,
       isLiked: req.user ? post.likes?.includes(req.user._id) : false,
       likes: undefined // Remove the likes array from response
     }));
 
+    // Add location metadata and sort by location relevance if requested
+    const userLocation = lat && lng ? { lat: parseFloat(lat), lng: parseFloat(lng) } : null;
+    
+    if (category === 'accommodation' && userLocation) {
+      enhancedPosts = addLocationMetadata(enhancedPosts, userLocation);
+      
+      if (sort === 'location') {
+        enhancedPosts = sortByLocationRelevance(enhancedPosts, userLocation);
+      }
+    }
+
     const totalPages = Math.ceil(totalCount / parseInt(limit));
 
-    res.json({
+    // Prepare response with enhanced metadata
+    const response = {
       success: true,
-      posts: postsWithLikes,
+      posts: enhancedPosts,
       pagination: {
         currentPage: parseInt(page),
         totalPages,
         totalCount,
         hasNextPage: parseInt(page) < totalPages,
         hasPrevPage: parseInt(page) > 1
+      },
+      location: {
+        ...locationMetadata,
+        userLocation,
+        searchRadius: radius
       }
-    });
+    };
+
+    // Add helpful suggestions if no posts found
+    if (enhancedPosts.length === 0 && category === 'accommodation') {
+      response.suggestions = generateAccommodationSuggestions(locationMetadata, userLocation);
+    }
+
+    console.log('✅ Sending response with', enhancedPosts.length, 'posts');
+    res.json(response);
 
   } catch (error) {
     console.error('Get posts error:', error);
@@ -237,6 +235,42 @@ const getPosts = async (req, res) => {
     });
   }
 };
+
+/**
+ * Generate helpful suggestions when no accommodation posts are found
+ */
+function generateAccommodationSuggestions(locationMetadata, userLocation) {
+  const suggestions = [];
+  
+  if (locationMetadata.fallbacksUsed.includes('gps_and_cities') && locationMetadata.searchArea?.nearbyCities) {
+    suggestions.push({
+      type: 'expand_search',
+      message: `No accommodations found nearby. Try searching in ${locationMetadata.searchArea.nearbyCities.map(c => c.name).join(', ')}`
+    });
+  }
+  
+  if (locationMetadata.fallbacksUsed.includes('city_based') && locationMetadata.searchArea?.foundCity) {
+    suggestions.push({
+      type: 'nearby_cities',
+      message: `No accommodations in ${locationMetadata.searchArea.foundCity}. Check nearby areas or try a broader search.`
+    });
+  }
+  
+  if (locationMetadata.fallbacksUsed.includes('show_all')) {
+    suggestions.push({
+      type: 'enable_location',
+      message: 'Enable location services to see accommodations near you, or search by city name.'
+    });
+  }
+  
+  // Always suggest major university cities
+  suggestions.push({
+    type: 'popular_cities',
+    message: 'Try searching in popular student cities: London, Manchester, Birmingham, Leeds, Liverpool'
+  });
+  
+  return suggestions;
+}
 
 // Get post by ID
 const getPostById = async (req, res) => {

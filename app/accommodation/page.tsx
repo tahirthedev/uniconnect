@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Navigation from '@/components/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,50 +27,83 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import LocationFilter from '@/components/location-filter';
+import MessagingModal from '@/components/messaging-modal';
 import { useLocationData, useLocation } from '@/contexts/LocationContext';
 
 export default function AccommodationPage() {
   // Global location state
   const locationData = useLocationData();
   const { updateRadius } = useLocation();
+  const router = useRouter();
   
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [locationInfo, setLocationInfo] = useState<any>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [selectedPost, setSelectedPost] = useState<any>(null);
+  const [showMessagingModal, setShowMessagingModal] = useState(false);
   const [filters, setFilters] = useState({
     priceRange: 'all',
     accommodationType: 'all',
     location: 'all'
   });
 
-  // Fix: Include locationData in the dependencies array
+  // Enhanced fetch function with smart backend integration
   const fetchAccommodationPosts = useCallback(async () => {
     setLoading(true);
     try {
-      // Build API parameters
+      // Build API parameters - let backend handle smart location logic
       const params: any = { category: 'accommodation' };
       
-      // Add location parameters if location data is available
-      if (locationData?.lat && locationData?.lng) {
-        params.lat = locationData.lat;
-        params.lng = locationData.lng;
-        params.radius = locationData.radius || 20; // Default 20km radius
+      // Add location if available (backend will use it intelligently)
+      if (locationData?.hasLocation) {
+        if (locationData.lat && locationData.lng) {
+          params.lat = locationData.lat;
+          params.lng = locationData.lng;
+          params.radius = locationData.radius || 20;
+        }
+        
+        // Also send city if available from location context
+        if (locationData.address) {
+          // Extract city from address (first part before comma)
+          const cityFromAddress = locationData.address.split(',')[0].trim();
+          if (cityFromAddress) {
+            params.city = cityFromAddress;
+          }
+        }
       }
       
       const response = await apiClient.getPosts(params);
       
       if (response && response.posts) {
         setPosts(response.posts);
+        
+        // Store location metadata from new backend
+        if (response.location) {
+          setLocationInfo(response.location);
+        }
+        
+        // Store suggestions if no posts found
+        if (response.suggestions) {
+          setSuggestions(response.suggestions);
+        } else {
+          setSuggestions([]);
+        }
       } else {
-        setPosts([]); // Set empty array if no posts
+        setPosts([]);
+        setLocationInfo(null);
+        setSuggestions([]);
       }
     } catch (error) {
       console.error('Error fetching accommodation posts:', error);
-      setPosts([]); // Set empty array on error
+      setPosts([]);
+      setLocationInfo(null);
+      setSuggestions([]);
     } finally {
       setLoading(false);
     }
-  }, [locationData.lat, locationData.lng, locationData.radius, locationData.hasLocation]); // Fix: Add dependencies
+  }, [locationData?.hasLocation, locationData?.lat, locationData?.lng, locationData?.radius, locationData?.address]);
 
   useEffect(() => {
     fetchAccommodationPosts();
@@ -85,7 +119,6 @@ export default function AccommodationPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     // Implement search functionality
-    console.log('Searching for:', searchTerm);
   };
 
   const formatPrice = (price: any) => {
@@ -99,6 +132,18 @@ export default function AccommodationPage() {
       month: 'short',
       year: 'numeric'
     });
+  };
+
+  const handleContactOwner = (post: any) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Please sign in to contact property owners');
+      window.location.href = '/auth';
+      return;
+    }
+    
+    setSelectedPost(post);
+    setShowMessagingModal(true);
   };
 
   if (loading) {
@@ -137,10 +182,12 @@ export default function AccommodationPage() {
             </h1>
             <p className="text-gray-600 mt-2">Find your perfect home away from home</p>
           </div>
-          <Button className="mt-4 md:mt-0 bg-orange-600 hover:bg-orange-700">
-            <Plus className="h-4 w-4 mr-2" />
-            List Your Property
-          </Button>
+          <Link href="/accommodation/list">
+            <Button className="mt-4 md:mt-0 bg-orange-600 hover:bg-orange-700">
+              <Plus className="h-4 w-4 mr-2" />
+              List Your Property
+            </Button>
+          </Link>
         </div>
 
         {/* Search and Filters */}
@@ -210,9 +257,34 @@ export default function AccommodationPage() {
 
         {/* Results */}
         <div className="mb-6">
-          <p className="text-gray-600">
-            {posts.length} accommodation{posts.length !== 1 ? 's' : ''} available
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-gray-600">
+              {posts.length} accommodation{posts.length !== 1 ? 's' : ''} available
+              {locationInfo && locationInfo.searchArea && (
+                <span className="text-sm text-gray-500 ml-2">
+                  {locationInfo.searchArea.foundCity && ` in ${locationInfo.searchArea.foundCity}`}
+                  {locationInfo.searchArea.nearbyCities && locationInfo.searchArea.nearbyCities.length > 0 && 
+                    ` and nearby areas`}
+                </span>
+              )}
+            </p>
+            
+            {/* Location Quality Indicator */}
+            {locationInfo && locationInfo.fallbacksUsed && locationInfo.fallbacksUsed.length > 0 && (
+              <div className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
+                {locationInfo.fallbacksUsed.includes('gps_and_cities') && '📍 Location-based'}
+                {locationInfo.fallbacksUsed.includes('city_based') && '🏙️ City-based'}
+                {locationInfo.fallbacksUsed.includes('show_all') && '🌍 All UK'}
+              </div>
+            )}
+          </div>
+          
+          {/* Distance info for posts */}
+          {posts.length > 0 && locationInfo?.userLocation && (
+            <p className="text-xs text-gray-500 mt-1">
+              Sorted by distance from your location
+            </p>
+          )}
         </div>
 
         {posts.length === 0 ? (
@@ -220,106 +292,201 @@ export default function AccommodationPage() {
             <CardContent>
               <Home className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No accommodations found</h3>
-              <p className="text-gray-500 mb-4">Be the first to list your property!</p>
-              <Button className="bg-orange-600 hover:bg-orange-700">
-                <Plus className="h-4 w-4 mr-2" />
-                List Your Property
-              </Button>
+              
+              {/* Show smart suggestions from backend */}
+              {suggestions.length > 0 ? (
+                <div className="mb-6">
+                  {suggestions.map((suggestion, index) => (
+                    <div key={index} className="mb-3">
+                      <p className="text-gray-600 text-sm mb-2">{suggestion.message}</p>
+                      {suggestion.type === 'popular_cities' && (
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          {['London', 'Manchester', 'Birmingham', 'Leeds', 'Liverpool'].map(city => (
+                            <Button
+                              key={city}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                // You can implement city selection here
+                              }}
+                              className="text-xs"
+                            >
+                              {city}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 mb-4">Be the first to list your property!</p>
+              )}
+              
+              <Link href="/accommodation/list">
+                <Button className="bg-orange-600 hover:bg-orange-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  List Your Property
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {posts.map((post: any) => (
-              <Card key={post._id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="relative">
-                  {post.images && post.images.length > 0 ? (
-                    <img
-                      src={post.images[0].url}
-                      alt={post.title}
-                      className="w-full h-48 object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                      <Home className="h-12 w-12 text-gray-400" />
-                    </div>
-                  )}
-                  <div className="absolute top-2 right-2 flex gap-2">
-                    <Button size="sm" variant="secondary" className="bg-white/80">
-                      <Heart className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="secondary" className="bg-white/80">
-                      <Share2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-lg line-clamp-2">{post.title}</h3>
-                    {post.details?.accommodation?.rating && (
-                      <div className="flex items-center gap-1 text-sm">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span>{post.details.accommodation.rating}</span>
+              <Card key={post._id} className="overflow-hidden hover:shadow-xl transition-all duration-200 cursor-pointer group">
+                <div 
+                  onClick={() => router.push(`/accommodation/${post._id}`)}
+                  className="block group-hover:scale-[1.02] transition-transform duration-200"
+                >
+                  <div className="relative">
+                    {post.images && post.images.length > 0 ? (
+                      <img
+                        src={post.images[0].url}
+                        alt={post.title}
+                        className="w-full h-48 object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                        <Home className="h-12 w-12 text-gray-400" />
                       </div>
                     )}
+                    <div className="absolute top-2 right-2 flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="secondary" 
+                        className="bg-white/80"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Handle favorite functionality
+                        }}
+                      >
+                        <Heart className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="secondary" 
+                        className="bg-white/80"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Handle share functionality
+                        }}
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   
-                  <div className="flex items-center text-gray-600 text-sm mb-2">
-                    <MapPin className="h-4 w-4 mr-1" />
-                    <span>{post.location?.city}, {post.location?.state}</span>
-                  </div>
-                  
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{post.description}</p>
-                  
-                  {post.details?.accommodation && (
-                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                      {post.details.accommodation.bedrooms && (
-                        <div className="flex items-center gap-1">
-                          <Bed className="h-4 w-4" />
-                          <span>{post.details.accommodation.bedrooms}</span>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-lg line-clamp-2">{post.title}</h3>
+                      {post.details?.accommodation?.rating && (
+                        <div className="flex items-center gap-1 text-sm">
+                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <span>{post.details.accommodation.rating}</span>
                         </div>
                       )}
-                      {post.details.accommodation.bathrooms && (
-                        <div className="flex items-center gap-1">
-                          <Bath className="h-4 w-4" />
-                          <span>{post.details.accommodation.bathrooms}</span>
-                        </div>
-                      )}
-                      {post.details.accommodation.amenities?.includes('wifi') && (
-                        <Wifi className="h-4 w-4" />
-                      )}
-                      {post.details.accommodation.amenities?.includes('parking') && (
-                        <Car className="h-4 w-4" />
+                    </div>
+                    
+                    <div className="flex items-center text-gray-600 text-sm mb-2">
+                      <MapPin className="h-4 w-4 mr-1" />
+                      <span>{post.location?.city}, {post.location?.state}</span>
+                      {post.distance && (
+                        <span className="ml-2 text-xs bg-gray-100 px-2 py-1 rounded">
+                          {post.distance.km}km away
+                          {!post.distance.calculated && (
+                            <span className="text-gray-400 ml-1" title={post.distance.note}>*</span>
+                          )}
+                        </span>
                       )}
                     </div>
-                  )}
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-lg text-orange-600">
-                        {formatPrice(post.price)}
-                      </span>
-                      {post.details?.accommodation?.type && (
-                        <Badge variant="secondary" className="ml-2">
-                          {post.details.accommodation.type}
-                        </Badge>
-                      )}
+                    
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{post.description}</p>
+                    
+                    {post.details?.accommodation && (
+                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                        {post.details.accommodation.bedrooms && (
+                          <div className="flex items-center gap-1">
+                            <Bed className="h-4 w-4" />
+                            <span>{post.details.accommodation.bedrooms}</span>
+                          </div>
+                        )}
+                        {post.details.accommodation.bathrooms && (
+                          <div className="flex items-center gap-1">
+                            <Bath className="h-4 w-4" />
+                            <span>{post.details.accommodation.bathrooms}</span>
+                          </div>
+                        )}
+                        {post.details.accommodation.amenities?.includes('wifi') && (
+                          <Wifi className="h-4 w-4" />
+                        )}
+                        {post.details.accommodation.amenities?.includes('parking') && (
+                          <Car className="h-4 w-4" />
+                        )}
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-lg text-orange-600">
+                          {formatPrice(post.price)}
+                        </span>
+                        {post.details?.accommodation?.type && (
+                          <Badge variant="secondary" className="ml-2">
+                            {post.details.accommodation.type}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <Button size="sm" className="bg-orange-600 hover:bg-orange-700">
-                      <MessageCircle className="h-4 w-4 mr-1" />
-                      Contact
-                    </Button>
-                  </div>
-                  
-                  <div className="text-xs text-gray-500 mt-2">
-                    Posted {formatDate(post.createdAt)}
-                  </div>
-                </CardContent>
+                    
+                    <div className="text-xs text-gray-500 mt-2">
+                      Posted {formatDate(post.createdAt)}
+                    </div>
+                  </CardContent>
+                </div>
+                
+                {/* Contact Button - Outside clickable area */}
+                <div className="px-4 pb-4 flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/accommodation/${post._id}`);
+                    }}
+                  >
+                    View Details
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    className="flex-1 bg-orange-600 hover:bg-orange-700"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleContactOwner(post);
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-1" />
+                    Contact
+                  </Button>
+                </div>
               </Card>
             ))}
           </div>
         )}
       </div>
+
+      {/* Messaging Modal */}
+      {selectedPost && (
+        <MessagingModal
+          isOpen={showMessagingModal}
+          onClose={() => setShowMessagingModal(false)}
+          recipientName={selectedPost.author?.name || 'Property Owner'}
+          rideTitle={selectedPost.title}
+          recipientId={selectedPost.author?._id || selectedPost.author}
+          rideId={selectedPost._id}
+        />
+      )}
     </div>
   );
 }
