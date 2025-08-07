@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Search, MessageCircle, User, Clock } from "lucide-react";
-import Navigation from "@/components/navigation";
 import MessagingModal from '@/components/messaging-modal';
 import { apiClient } from '@/lib/api';
 
@@ -104,8 +103,7 @@ export default function MessagesPage() {
   if (!isClient) {
     // Show loading during hydration
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
+      <div className="min-h-screen bg-gray-50 pt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center py-12">
             <div className="text-gray-500">Loading...</div>
@@ -117,8 +115,7 @@ export default function MessagesPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
+      <div className="min-h-screen bg-gray-50 pt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center py-12">
             <MessageCircle className="mx-auto h-12 w-12 text-gray-400" />
@@ -141,9 +138,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      
+    <div className="min-h-screen bg-gray-50 pt-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Messages</h1>

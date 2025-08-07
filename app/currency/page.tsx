@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from "react";
 import { ArrowLeft, ArrowUpDown, MapPin, Clock, TrendingUp, Calculator, User, Star, Shield } from "lucide-react"
-import Navigation from "@/components/navigation"
 import Link from "next/link"
 import LocationFilter from "@/components/location-filter"
 
@@ -65,9 +64,7 @@ export default function CurrencyExchangePage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-
+    <div className="min-h-screen bg-gray-50 pt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex items-center mb-6">

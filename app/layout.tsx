@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { LocationProvider } from '@/contexts/LocationContext'
+import Navigation from '@/components/navigation'
 
 export const metadata: Metadata = {
   title: 'SayDone - Student Services Platform',
@@ -21,6 +22,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <LocationProvider defaultRadius={20}>
+          <Navigation />
           {children}
         </LocationProvider>
       </body>
