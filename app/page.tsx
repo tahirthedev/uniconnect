@@ -1,462 +1,574 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import {
-  Search,
-  MapPin,
-  Car,
-  Briefcase,
-  ShoppingBag,
-  Home,
-  DollarSign,
-  MessageCircle,
-  Users,
-  Star,
-  ChevronDown,
-  ChevronRight,
-  ArrowRight,
-  Shield,
-  Clock,
-  Verified,
-} from "lucide-react"
-import Navigation from "@/components/navigation"
-import SearchForm from "@/components/search-form"
-import LocationDisplay from "@/components/location-display"
-import Link from "next/link"
+import { useState, useEffect } from 'react'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { ChevronDown, ChevronRight, Star, MapPin, Briefcase, Home, MessageCircle, Shield, Users, Clock, ArrowRight } from 'lucide-react'
 import Image from "next/image"
+import Link from "next/link"
+import LocationDisplay from "@/components/location-display"
 
 export default function HomePage() {
-  const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
-
-  const categories = [
-    {
-      name: "Pick & Drop",
-      icon: Car,
-      color: "bg-orange-100 text-orange-600",
-      href: "/ridesharing",
-      count: "Active rides",
-    },
-    { name: "Jobs", icon: Briefcase, color: "bg-orange-100 text-orange-600", href: "/jobs", count: "Fresh openings" },
-    {
-      name: "Buy/Sell",
-      icon: ShoppingBag,
-      color: "bg-orange-100 text-orange-600",
-      href: "/marketplace",
-      count: "Local deals",
-    },
-    {
-      name: "Accommodation",
-      icon: Home,
-      color: "bg-orange-100 text-orange-600",
-      href: "/accommodation",
-      count: "Student rooms",
-    },
-    {
-      name: "Currency Exchange",
-      icon: DollarSign,
-      color: "bg-orange-100 text-orange-600",
-      href: "/currency",
-      count: "Live rates",
-    },
-  ];
+  const [activeAccordion, setActiveAccordion] = useState<number | null>(null)
+  const [currentTestimonial, setCurrentTestimonial] = useState(0)
 
   const testimonials = [
     {
-      id: 1,
-      name: "Sarah Chen",
-      location: "UCL, London",
-      quote: "Found my perfect flatmate and part-time job within a week. SayDone just gets it.",
-      image: "https://picsum.photos/60/60?random=1",
-      verified: true
-    },
-    {
-      id: 2,
-      name: "James Mitchell",
+      name: "Emma Thompson",
       location: "Manchester University",
-      quote: "Never struggled with airport pickups again. The community here is incredible.",
-      image: "https://picsum.photos/60/60?random=2",
+      image: "https://picsum.photos/80/80?random=1",
+      quote: "I never imagined finding rides, jobs, and rooms could be this smooth. SayDone just gets it.",
       verified: true
     },
     {
-      id: 3,
-      name: "Priya Patel",
-      location: "Birmingham Uni",
-      quote: "From textbooks to internships, everything I needed was right here.",
-      image: "https://picsum.photos/60/60?random=3",
+      name: "James Wilson",
+      location: "University of Edinburgh",
+      image: "https://picsum.photos/80/80?random=2",
+      quote: "From finding my perfect flat to landing a part-time job, SayDone made my student life so much easier.",
       verified: true
     },
     {
-      id: 4,
-      name: "Alex Thompson",
-      location: "Edinburgh University",
-      quote: "The real-time messaging made coordinating group trips so much easier.",
-      image: "https://picsum.photos/60/60?random=4",
+      name: "Sophie Chen",
+      location: "King's College London",
+      image: "https://picsum.photos/80/80?random=3",
+      quote: "The community here is incredible. Real students, real connections, real results.",
+      verified: true
+    },
+    {
+      name: "Alex Rodriguez",
+      location: "University of Birmingham",
+      image: "https://picsum.photos/80/80?random=4",
+      quote: "Finally, a platform that understands what students actually need. Game changer!",
       verified: true
     }
-  ];
+  ]
 
   const faqs = [
     {
       question: "How do I verify my student status?",
-      answer: "Simply upload your university ID or use your .ac.uk email address. We verify all accounts to maintain our trusted community."
+      answer: "Simply upload your student ID or university email during registration. We verify all accounts within 24 hours to maintain our trusted community."
     },
     {
-      question: "Is messaging completely secure?",
-      answer: "Yes! All messages are encrypted and we never share your personal information. You can also report any inappropriate behavior."
+      question: "Is SayDone free to use?",
+      answer: "Yes! Basic features are completely free. We offer premium features for enhanced visibility and priority support."
     },
     {
-      question: "What areas does SayDone cover?",
-      answer: "We're active in all major UK university cities including London, Manchester, Birmingham, Edinburgh, and 50+ other locations."
+      question: "How do you ensure safety?",
+      answer: "All users are verified students, we have 24/7 moderation, secure messaging, and a comprehensive rating system for all services."
     },
     {
-      question: "How do payments work for services?",
-      answer: "We facilitate secure payments between users for services like rides and rentals. Currency exchange happens directly between verified students."
+      question: "Which universities are supported?",
+      answer: "We support all major UK universities. If your university isn't listed, contact us and we'll add it within 48 hours."
     },
     {
-      question: "Can I use SayDone if I'm not a student?",
-      answer: "SayDone is exclusively for university students, staff, and recent graduates to maintain our focused community environment."
+      question: "How quickly can I find what I need?",
+      answer: "Most students find what they're looking for within 24 hours. Our real-time messaging ensures instant connections."
     }
-  ];
+  ]
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length)
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [testimonials.length])
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Hero Section with Overlay Navigation */}
-      <div className="relative min-h-screen bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 overflow-hidden">
-        {/* Subtle Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `radial-gradient(circle at 25% 25%, white 2px, transparent 2px), radial-gradient(circle at 75% 75%, white 2px, transparent 2px)`,
-            backgroundSize: '50px 50px'
-          }}></div>
-        </div>
-
-        {/* Navigation Overlay */}
-        <Navigation />
-
-        {/* Hero Content */}
-        <div className="relative flex items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8">
-          <div className="text-center text-white max-w-5xl mx-auto">
-            {/* Main Headline */}
-            <h1 className="text-5xl md:text-7xl font-black leading-tight mb-8 tracking-tight">
-              Reimagine Student
-              <span className="block text-white/90">Connections</span>
-            </h1>
-            
-            {/* Subheadline */}
-            <h2 className="text-2xl md:text-3xl font-light text-white/90 mb-16 max-w-3xl mx-auto leading-relaxed">
-              Services that get things done. Real fast. Real local.
-            </h2>
-
-            {/* CTA Button */}
-            <div className="mb-20">
-              <button className="group bg-white text-orange-600 font-bold text-xl px-12 py-4 rounded-full hover:bg-orange-50 transition-all duration-300 transform hover:scale-105 shadow-2xl">
-                Get Started Now
-                <ArrowRight className="inline-block ml-2 h-6 w-6 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Review Section */}
-      <div className="relative bg-gray-50 py-32">
-        {/* Giant Quote Background */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-[400px] font-serif text-gray-100 select-none leading-none">"</span>
-        </div>
-        
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <blockquote className="text-3xl md:text-4xl font-serif text-gray-800 leading-relaxed">
-            "I never imagined finding rides, jobs, and rooms could be this smooth. 
-            <span className="text-orange-600 font-bold"> SayDone just gets it.</span>"
-          </blockquote>
-          <cite className="block mt-8 text-lg text-gray-600 font-medium">
-            — Emma Rodriguez, King's College London
-          </cite>
-        </div>
-      </div>
-
-      {/* Categories Section */}
-      <div className="bg-white py-32">
+      {/* Navbar */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">
-              Everything You Need
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              All your student essentials in one place
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 max-w-5xl mx-auto">
-            {categories.map((category) => {
-              const IconComponent = category.icon
-              return (
-                <Link
-                  key={category.name}
-                  href={category.href}
-                  className="group bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer hover:-translate-y-3 border border-gray-100 hover:border-orange-200"
-                >
-                  <div className={`w-16 h-16 rounded-2xl ${category.color} flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
-                    <IconComponent className="h-8 w-8" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900 text-center mb-2">{category.name}</h3>
-                  <p className="text-sm text-orange-600 text-center font-medium">{category.count}</p>
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* How SayDone Works Section */}
-      <div className="bg-gray-50 py-32">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">How SayDone Works</h2>
-            <p className="text-xl text-gray-600">Three simple steps to get things done</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-6xl mx-auto">
-            <div className="group">
-              <div className="bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 border-b-4 border-orange-400 hover:-translate-y-2">
-                <div className="w-16 h-16 bg-gradient-to-r from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <Search className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">Find What Moves You</h3>
-                <p className="text-gray-600 text-center leading-relaxed">From shared rides to curated jobs – discover exactly what you need in your university community</p>
-              </div>
-            </div>
-            
-            <div className="group">
-              <div className="bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 border-b-4 border-orange-400 hover:-translate-y-2">
-                <div className="w-16 h-16 bg-gradient-to-r from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <MessageCircle className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">Speak, Don't Scroll</h3>
-                <p className="text-gray-600 text-center leading-relaxed">Real-time direct messaging that cuts through the noise and gets straight to the point</p>
-              </div>
-            </div>
-            
-            <div className="group">
-              <div className="bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 border-b-4 border-orange-400 hover:-translate-y-2">
-                <div className="w-16 h-16 bg-gradient-to-r from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <Star className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">Make It Count</h3>
-                <p className="text-gray-600 text-center leading-relaxed">Verified listings, real reviews – every connection matters in our trusted student network</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Safe & Trusted Community Section */}
-      <div className="bg-white py-32">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">A Community You Can Count On</h2>
-            <p className="text-xl text-gray-600">Your safety and trust matter most</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <div className="group">
-              <div className="bg-gradient-to-r from-orange-400 to-orange-600 rounded-3xl p-8 text-white shadow-2xl hover:shadow-orange-200 transition-all duration-500 hover:-translate-y-2">
-                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
-                  <Verified className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-center">Verified University Listings</h3>
-                <p className="text-orange-100 text-center leading-relaxed">Only students. Only trusted circles.</p>
-              </div>
-            </div>
-            
-            <div className="group">
-              <div className="bg-gradient-to-r from-orange-400 to-orange-600 rounded-3xl p-8 text-white shadow-2xl hover:shadow-orange-200 transition-all duration-500 hover:-translate-y-2">
-                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
-                  <Users className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-center">Built by Students</h3>
-                <p className="text-orange-100 text-center leading-relaxed">From our dorms to yours.</p>
-              </div>
-            </div>
-            
-            <div className="group">
-              <div className="bg-gradient-to-r from-orange-400 to-orange-600 rounded-3xl p-8 text-white shadow-2xl hover:shadow-orange-200 transition-all duration-500 hover:-translate-y-2">
-                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
-                  <Clock className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-center">24/7 Peer Support</h3>
-                <p className="text-orange-100 text-center leading-relaxed">We're here when you need us.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Testimonials Section */}
-      <div className="bg-gray-50 py-32 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">What Students Say</h2>
-            <p className="text-xl text-gray-600">Real stories from our community</p>
-          </div>
-          
-          <div className="flex space-x-8 animate-scroll">
-            {[...testimonials, ...testimonials].map((testimonial, index) => (
-              <div key={`${testimonial.id}-${index}`} className="flex-shrink-0 w-80">
-                <div className="bg-white rounded-3xl p-8 shadow-xl border-2 border-orange-200 hover:border-orange-400 transition-all duration-300 h-full">
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h4 className="font-bold text-gray-900 text-lg">{testimonial.name}</h4>
-                        <p className="text-sm text-gray-600">{testimonial.location}</p>
-                      </div>
-                      {testimonial.verified && (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                          <Verified className="w-3 h-3 mr-1" />
-                          Verified
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-gray-700 leading-relaxed italic text-lg">"{testimonial.quote}"</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* FAQ Section */}
-      <div className="bg-white py-32">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">Frequently Asked Questions</h2>
-            <p className="text-xl text-gray-600">Everything you need to know</p>
-          </div>
-          
-          <div className="space-y-4">
-            {faqs.map((faq, index) => (
-              <div key={index} className="border border-gray-200 rounded-2xl overflow-hidden">
-                <button
-                  className="w-full px-8 py-6 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-                  onClick={() => setActiveAccordion(activeAccordion === index ? null : index)}
-                >
-                  <span className="font-semibold text-gray-900 flex items-center">
-                    <ArrowRight className={`h-5 w-5 text-orange-600 mr-3 transform transition-transform ${activeAccordion === index ? 'rotate-90' : ''}`} />
-                    {faq.question}
-                  </span>
-                  <ChevronDown className={`h-5 w-5 text-gray-400 transform transition-transform ${activeAccordion === index ? 'rotate-180' : ''}`} />
-                </button>
-                {activeAccordion === index && (
-                  <div className="px-8 pb-6">
-                    <p className="text-gray-600 leading-relaxed pl-8">{faq.answer}</p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* CTA Before Footer */}
-      <div className="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 py-32">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="relative">
-            <div className="absolute inset-0 bg-white/10 rounded-full blur-3xl"></div>
-            <div className="relative">
+          <div className="flex justify-between items-center h-16">
+            <Link href="/" className="flex items-center space-x-3">
               <Image
                 src="/logo.png"
                 alt="SayDone Logo"
-                width={120}
-                height={158}
-                className="mx-auto mb-8"
+                width={32}
+                height={32}
+                className="rounded-lg"
               />
-              <h2 className="text-5xl md:text-6xl font-black text-white mb-6">
-                SayDone
-              </h2>
-              <p className="text-2xl md:text-3xl text-white/90 font-light">
-                Do it before it's said
-              </p>
+              <span className="text-xl font-bold text-gray-900">SayDone</span>
+            </Link>
+            <div className="hidden md:flex items-center space-x-2">
+              <Link href="/jobs">
+                <Button variant="ghost" className="hover:bg-orange-50 hover:text-orange-600 transition-all duration-200">
+                  Jobs
+                </Button>
+              </Link>
+              <Link href="/ridesharing">
+                <Button variant="ghost" className="hover:bg-orange-50 hover:text-orange-600 transition-all duration-200">
+                  Rides
+                </Button>
+              </Link>
+              <Link href="/accommodation">
+                <Button variant="ghost" className="hover:bg-orange-50 hover:text-orange-600 transition-all duration-200">
+                  Accommodation
+                </Button>
+              </Link>
+              <Link href="/marketplace">
+                <Button variant="ghost" className="hover:bg-orange-50 hover:text-orange-600 transition-all duration-200">
+                  Marketplace
+                </Button>
+              </Link>
+              <Link href="/messages">
+                <Button variant="ghost" className="hover:bg-orange-50 hover:text-orange-600 transition-all duration-200">
+                  Messages
+                </Button>
+              </Link>
+              <Link href="/auth">
+                <Button variant="outline" className="border-orange-200 hover:bg-orange-50 hover:border-orange-300 transition-all duration-200">
+                  Login
+                </Button>
+              </Link>
+              <Link href="/auth">
+                <Button className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 transition-all duration-200 shadow-lg hover:shadow-orange-200">
+                  Get Started
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            {/* Quick Links */}
-            <div>
-              <h4 className="font-bold text-white mb-6 text-lg">Quick Links</h4>
-              <ul className="space-y-4 text-gray-300">
-                <li><Link href="/jobs" className="hover:text-orange-400 transition-colors duration-200">Find Jobs</Link></li>
-                <li><Link href="/ridesharing" className="hover:text-orange-400 transition-colors duration-200">Ridesharing</Link></li>
-                <li><Link href="/accommodation" className="hover:text-orange-400 transition-colors duration-200">Accommodation</Link></li>
-                <li><Link href="/marketplace" className="hover:text-orange-400 transition-colors duration-200">Marketplace</Link></li>
-                <li><Link href="/currency" className="hover:text-orange-400 transition-colors duration-200">Currency Exchange</Link></li>
-              </ul>
-            </div>
-            
-            {/* Resources */}
-            <div>
-              <h4 className="font-bold text-white mb-6 text-lg">Resources</h4>
-              <ul className="space-y-4 text-gray-300">
-                <li><a href="#" className="hover:text-orange-400 transition-colors duration-200">Help Center</a></li>
-                <li><a href="#" className="hover:text-orange-400 transition-colors duration-200">Contact Support</a></li>
-                <li><a href="#" className="hover:text-orange-400 transition-colors duration-200">Safety Tips</a></li>
-                <li><a href="#" className="hover:text-orange-400 transition-colors duration-200">Community Guidelines</a></li>
-              </ul>
-            </div>
-            
-            {/* Legal */}
-            <div>
-              <h4 className="font-bold text-white mb-6 text-lg">Legal</h4>
-              <ul className="space-y-4 text-gray-300">
-                <li><a href="#" className="hover:text-orange-400 transition-colors duration-200">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-orange-400 transition-colors duration-200">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-orange-400 transition-colors duration-200">Cookie Policy</a></li>
-                <li><a href="#" className="hover:text-orange-400 transition-colors duration-200">GDPR Compliance</a></li>
-              </ul>
-            </div>
-            
-            {/* About SayDone */}
-            <div>
-              <h4 className="font-bold text-white mb-6 text-lg">About SayDone</h4>
-              <p className="text-gray-300 mb-6 leading-relaxed">
-                Connecting UK students through trusted local services. From campus to career, we've got you covered.
-              </p>
-              <div className="flex space-x-4">
-                <a href="#" className="text-gray-300 hover:text-orange-400 transition-colors duration-200 text-2xl">📘</a>
-                <a href="#" className="text-gray-300 hover:text-orange-400 transition-colors duration-200 text-2xl">🐦</a>
-                <a href="#" className="text-gray-300 hover:text-orange-400 transition-colors duration-200 text-2xl">📷</a>
-                <a href="#" className="text-gray-300 hover:text-orange-400 transition-colors duration-200 text-2xl">💼</a>
+      {/* Hero Section */}
+      <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-orange-50 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-100/20 to-transparent"></div>
+        <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+            Reimagine Student
+            <span className="block bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+              Connections
+            </span>
+          </h1>
+          <h2 className="text-xl sm:text-2xl lg:text-3xl text-gray-600 mb-12 font-light leading-relaxed">
+            Services that get things done. Real fast. Real local.
+          </h2>
+          <Link href="/auth">
+            <Button 
+              size="lg" 
+              className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white px-12 py-4 text-lg font-semibold rounded-full shadow-2xl hover:shadow-orange-200 transition-all duration-300 transform hover:scale-105"
+            >
+              Get Started Now
+            </Button>
+          </Link>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent"></div>
+      </section>
+
+      {/* Review Section */}
+      <section className="py-24 bg-white relative overflow-hidden">
+        <div className="absolute inset-0 flex items-center justify-center opacity-5">
+          <span className="text-[20rem] font-serif text-orange-300">"</span>
+        </div>
+        <div className="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+          <blockquote className="text-2xl sm:text-3xl lg:text-4xl font-serif text-gray-800 leading-relaxed">
+            "I never imagined finding rides, jobs, and rooms could be this smooth. SayDone just gets it."
+          </blockquote>
+        </div>
+      </section>
+
+      {/* Location Section */}
+      <section className="py-24 bg-gradient-to-br from-orange-50 to-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">Your Local Hub</h2>
+            <p className="text-xl text-gray-600">Services tailored to your location</p>
+          </div>
+          <div className="max-w-4xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              <div className="order-2 md:order-1">
+                <LocationDisplay 
+                  showMap={true}
+                  onLocationUpdate={(location) => {
+                    const existingLocation = sessionStorage.getItem('userLocation');
+                    if (!existingLocation) {
+                      sessionStorage.setItem('userLocation', JSON.stringify(location));
+                      sessionStorage.setItem('locationTimestamp', Date.now().toString());
+                      (window as any).userLocation = location;
+                    }
+                  }}
+                />
+              </div>
+              <div className="order-1 md:order-2">
+                <div className="space-y-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">Hyper-Local Services</h3>
+                      <p className="text-gray-600">Find rides, jobs, and accommodation within walking distance of your campus.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Shield className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">Privacy Protected</h3>
+                      <p className="text-gray-600">Your location is used only to show relevant local services. We never share your exact location.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">Real-Time Updates</h3>
+                      <p className="text-gray-600">Get instant notifications for new opportunities in your area.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          
-          <div className="border-t border-gray-800 mt-12 pt-8">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              <p className="text-gray-400 text-center md:text-left">
-                © 2025 SayDone. All rights reserved. Made with ❤️ for UK students.
-              </p>
-              
-              {/* Subtle Location Display */}
-              <div className="mt-4 md:mt-0">
-                <div className="hidden">
-                  <LocationDisplay 
-                    onLocationUpdate={(location) => {
-                      const existingLocation = sessionStorage.getItem('userLocation');
-                      if (!existingLocation) {
-                        sessionStorage.setItem('userLocation', JSON.stringify(location));
-                        sessionStorage.setItem('locationTimestamp', Date.now().toString());
-                        (window as any).userLocation = location;
-                      }
-                    }}
-                  />
+        </div>
+      </section>
+
+      {/* How We Work Section */}
+      <section className="py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">How SayDone Works</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <MapPin className="w-8 h-8 text-orange-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">Find What Moves You</h3>
+                <p className="text-gray-600">From shared rides to curated jobs</p>
+                <div className="mt-6 h-1 bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+              </CardContent>
+            </Card>
+            <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <MessageCircle className="w-8 h-8 text-orange-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">Speak, Don't Scroll</h3>
+                <p className="text-gray-600">Real-time direct messaging</p>
+                <div className="mt-6 h-1 bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+              </CardContent>
+            </Card>
+            <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Star className="w-8 h-8 text-orange-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">Make It Count</h3>
+                <p className="text-gray-600">Verified listings, real reviews</p>
+                <div className="mt-6 h-1 bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Services Section */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">All Your Student Essentials</h2>
+            <p className="text-xl text-gray-600">Everything you need in one place</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            <Link href="/jobs" className="group">
+              <Card className="bg-white border-2 border-gray-100 hover:border-orange-300 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                <CardContent className="p-6 text-center">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Briefcase className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Jobs</h3>
+                  <p className="text-sm text-gray-600">Part-time opportunities</p>
+                </CardContent>
+              </Card>
+            </Link>
+            
+            <Link href="/ridesharing" className="group">
+              <Card className="bg-white border-2 border-gray-100 hover:border-orange-300 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                <CardContent className="p-6 text-center">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <MapPin className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Rides</h3>
+                  <p className="text-sm text-gray-600">Share the journey</p>
+                </CardContent>
+              </Card>
+            </Link>
+            
+            <Link href="/accommodation" className="group">
+              <Card className="bg-white border-2 border-gray-100 hover:border-orange-300 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                <CardContent className="p-6 text-center">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Home className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Accommodation</h3>
+                  <p className="text-sm text-gray-600">Find your home</p>
+                </CardContent>
+              </Card>
+            </Link>
+            
+            <Link href="/marketplace" className="group">
+              <Card className="bg-white border-2 border-gray-100 hover:border-orange-300 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                <CardContent className="p-6 text-center">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Star className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Marketplace</h3>
+                  <p className="text-sm text-gray-600">Buy & sell items</p>
+                </CardContent>
+              </Card>
+            </Link>
+            
+            <Link href="/currency" className="group">
+              <Card className="bg-white border-2 border-gray-100 hover:border-orange-300 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                <CardContent className="p-6 text-center">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Clock className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Currency</h3>
+                  <p className="text-sm text-gray-600">Exchange rates</p>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Safe & Trusted Community Section */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">A Community You Can Count On</h2>
+          </div>
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-orange-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-orange-100">
+              <div className="flex items-center space-x-6">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Shield className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Verified University Listings</h3>
+                  <p className="text-gray-600">Only students. Only trusted circles.</p>
                 </div>
               </div>
+            </div>
+            <div className="bg-gradient-to-r from-orange-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-orange-100">
+              <div className="flex items-center space-x-6">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Built by Students</h3>
+                  <p className="text-gray-600">From our dorms to yours.</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-gradient-to-r from-orange-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-orange-100">
+              <div className="flex items-center space-x-6">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">24/7 Peer Support</h3>
+                  <p className="text-gray-600">We're here when you need us.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-24 bg-gray-50 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">What Students Say</h2>
+          </div>
+          <div className="relative">
+            <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${currentTestimonial * 100}%)` }}>
+              {testimonials.map((testimonial, index) => (
+                <div key={index} className="w-full flex-shrink-0 px-4">
+                  <Card className="max-w-2xl mx-auto bg-white border-2 border-orange-100 shadow-xl hover:shadow-2xl transition-all duration-300">
+                    <CardContent className="p-8 text-center">
+                      <div className="relative mb-6">
+                        <Image
+                          src={testimonial.image || "/placeholder.svg"}
+                          alt={testimonial.name}
+                          width={80}
+                          height={80}
+                          className="rounded-full mx-auto border-4 border-orange-100"
+                        />
+                        {testimonial.verified && (
+                          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
+                            Student Verified
+                          </div>
+                        )}
+                      </div>
+                      <blockquote className="text-lg text-gray-700 mb-4 italic">
+                        "{testimonial.quote}"
+                      </blockquote>
+                      <div className="flex items-center justify-center space-x-1 mb-2">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className="w-4 h-4 fill-orange-400 text-orange-400" />
+                        ))}
+                      </div>
+                      <p className="font-semibold text-gray-900">{testimonial.name}</p>
+                      <p className="text-sm text-gray-600">{testimonial.location}</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-center mt-8 space-x-2">
+              {testimonials.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentTestimonial(index)}
+                  className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                    index === currentTestimonial ? 'bg-orange-500' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-24 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h2>
+          </div>
+          <div className="space-y-4">
+            {faqs.map((faq, index) => (
+              <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setActiveAccordion(activeAccordion === index ? null : index)}
+                  className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors duration-200"
+                >
+                  <span className="font-semibold text-gray-900 flex items-center">
+                    <ArrowRight className={`w-4 h-4 text-orange-500 mr-3 transition-transform duration-200 ${
+                      activeAccordion === index ? 'rotate-90' : ''
+                    }`} />
+                    {faq.question}
+                  </span>
+                </button>
+                <div className={`overflow-hidden transition-all duration-300 ${
+                  activeAccordion === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                }`}>
+                  <div className="px-6 pb-4 text-gray-600 ml-7">
+                    {faq.answer}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Before Footer */}
+      <section className="py-24 bg-gradient-to-br from-gray-900 to-gray-800 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-transparent"></div>
+        <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center justify-center mb-6">
+              <Image
+                src="/logo.png"
+                alt="SayDone Logo"
+                width={64}
+                height={64}
+                className="rounded-2xl mr-4"
+              />
+              <span className="text-4xl font-bold text-white">SayDone</span>
+            </div>
+            <p className="text-2xl sm:text-3xl text-white mb-8 font-light">
+              Do it before it's said
+            </p>
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-500 rounded-full blur-xl opacity-30"></div>
+              <Link href="/auth">
+                <Button 
+                  size="lg" 
+                  className="relative bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white px-12 py-4 text-lg font-semibold rounded-full shadow-2xl transition-all duration-300 transform hover:scale-105"
+                >
+                  Join SayDone Today
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-orange-400">Quick Links</h3>
+              <ul className="space-y-2">
+                <li><Link href="/jobs" className="text-gray-300 hover:text-white transition-colors">Jobs</Link></li>
+                <li><Link href="/ridesharing" className="text-gray-300 hover:text-white transition-colors">Rides</Link></li>
+                <li><Link href="/accommodation" className="text-gray-300 hover:text-white transition-colors">Accommodation</Link></li>
+                <li><Link href="/marketplace" className="text-gray-300 hover:text-white transition-colors">Marketplace</Link></li>
+                <li><Link href="/currency" className="text-gray-300 hover:text-white transition-colors">Currency Exchange</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-orange-400">Resources</h3>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Help Center</a></li>
+                <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Contact</a></li>
+                <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Safety Tips</a></li>
+                <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Community Guidelines</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-orange-400">Legal</h3>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Terms of Service</a></li>
+                <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Cookie Policy</a></li>
+                <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Data Protection</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-orange-400">About SayDone</h3>
+              <p className="text-gray-300 mb-4">
+                Connecting UK students with the services they need, when they need them.
+              </p>
+              <div className="flex items-center space-x-3">
+                <Image
+                  src="/logo.png"
+                  alt="SayDone Logo"
+                  width={32}
+                  height={32}
+                  className="rounded-lg"
+                />
+                <span className="text-xl font-bold">SayDone</span>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center">
+            <p className="text-gray-400">
+              © {new Date().getFullYear()} SayDone. All rights reserved. Made with for UK students.
+            </p>
+            
+            {/* Hidden Location Display - Keeping location functionality */}
+            <div className="hidden">
+              <LocationDisplay 
+                onLocationUpdate={(location) => {
+                  const existingLocation = sessionStorage.getItem('userLocation');
+                  if (!existingLocation) {
+                    sessionStorage.setItem('userLocation', JSON.stringify(location));
+                    sessionStorage.setItem('locationTimestamp', Date.now().toString());
+                    (window as any).userLocation = location;
+                  }
+                }}
+              />
             </div>
           </div>
         </div>
