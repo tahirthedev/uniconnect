@@ -3,14 +3,45 @@
 import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ChevronDown, ChevronRight, Star, MapPin, Briefcase, Home, MessageCircle, Shield, Users, Clock, ArrowRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Star, MapPin, Briefcase, Home, MessageCircle, Shield, Users, Clock, ArrowRight, User, LogOut } from 'lucide-react'
 import Image from "next/image"
 import Link from "next/link"
 import LocationDisplay from "@/components/location-display"
+import { isAuthenticated, getUserInfo, logout } from "@/lib/auth"
 
 export default function HomePage() {
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null)
   const [currentTestimonial, setCurrentTestimonial] = useState(0)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userInfo, setUserInfo] = useState<any>(null)
+
+  useEffect(() => {
+    // Check authentication status on component mount
+    const checkAuth = () => {
+      const loggedIn = isAuthenticated()
+      setIsLoggedIn(loggedIn)
+      if (loggedIn) {
+        const user = getUserInfo()
+        setUserInfo(user)
+      }
+    }
+    
+    checkAuth()
+    
+    // Listen for storage changes (when user logs in from another tab)
+    const handleStorageChange = () => {
+      checkAuth()
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
+
+  const handleLogout = () => {
+    logout()
+    setIsLoggedIn(false)
+    setUserInfo(null)
+  }
 
   const testimonials = [
     {
@@ -115,16 +146,39 @@ export default function HomePage() {
                   Messages
                 </Button>
               </Link>
-              <Link href="/auth">
-                <Button variant="outline" className="border-orange-200 hover:bg-orange-50 hover:border-orange-300 transition-all duration-200">
-                  Login
-                </Button>
-              </Link>
-              <Link href="/auth">
-                <Button className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 transition-all duration-200 shadow-lg hover:shadow-orange-200">
-                  Get Started
-                </Button>
-              </Link>
+              
+              {isLoggedIn && userInfo ? (
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 px-3 py-1 bg-orange-50 rounded-lg">
+                    <User className="w-4 h-4 text-orange-600" />
+                    <span className="text-sm font-medium text-orange-700">
+                      Hi, {userInfo.name?.split(' ')[0] || userInfo.email?.split('@')[0] || 'User'}!
+                    </span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleLogout}
+                    className="border-orange-200 hover:bg-orange-50 hover:border-orange-300 transition-all duration-200"
+                  >
+                    <LogOut className="w-4 h-4 mr-1" />
+                    Logout
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Link href="/auth">
+                    <Button variant="outline" className="border-orange-200 hover:bg-orange-50 hover:border-orange-300 transition-all duration-200">
+                      Login
+                    </Button>
+                  </Link>
+                  <Link href="/auth">
+                    <Button className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 transition-all duration-200 shadow-lg hover:shadow-orange-200">
+                      Get Started
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -134,23 +188,64 @@ export default function HomePage() {
       <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-orange-50 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-orange-100/20 to-transparent"></div>
         <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-            Reimagine Student
-            <span className="block bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-              Connections
-            </span>
-          </h1>
-          <h2 className="text-xl sm:text-2xl lg:text-3xl text-gray-600 mb-12 font-light leading-relaxed">
-            Services that get things done. Real fast. Real local.
-          </h2>
-          <Link href="/auth">
-            <Button 
-              size="lg" 
-              className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white px-12 py-4 text-lg font-semibold rounded-full shadow-2xl hover:shadow-orange-200 transition-all duration-300 transform hover:scale-105"
-            >
-              Get Started Now
-            </Button>
-          </Link>
+          {isLoggedIn && userInfo ? (
+            <>
+              <div className="mb-4 inline-flex items-center space-x-2 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
+                <User className="w-5 h-5 text-orange-600" />
+                <span className="text-orange-700 font-medium">
+                  Welcome back, {userInfo.name?.split(' ')[0] || userInfo.email?.split('@')[0] || 'User'}!
+                </span>
+              </div>
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+                Your Student
+                <span className="block bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+                  Hub Awaits
+                </span>
+              </h1>
+              <h2 className="text-xl sm:text-2xl lg:text-3xl text-gray-600 mb-12 font-light leading-relaxed">
+                Discover local opportunities, connect with students, and get things done.
+              </h2>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/jobs">
+                  <Button 
+                    size="lg" 
+                    className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-2xl hover:shadow-orange-200 transition-all duration-300 transform hover:scale-105"
+                  >
+                    Find Jobs
+                  </Button>
+                </Link>
+                <Link href="/ridesharing">
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    className="border-gray-300 hover:bg-gray-50 px-8 py-4 text-lg font-semibold rounded-full transition-all duration-300"
+                  >
+                    Book Rides
+                  </Button>
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+                Reimagine Student
+                <span className="block bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+                  Connections
+                </span>
+              </h1>
+              <h2 className="text-xl sm:text-2xl lg:text-3xl text-gray-600 mb-12 font-light leading-relaxed">
+                Services that get things done. Real fast. Real local.
+              </h2>
+              <Link href="/auth">
+                <Button 
+                  size="lg" 
+                  className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white px-12 py-4 text-lg font-semibold rounded-full shadow-2xl hover:shadow-orange-200 transition-all duration-300 transform hover:scale-105"
+                >
+                  Get Started Now
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent"></div>
       </section>
