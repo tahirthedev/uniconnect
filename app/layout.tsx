@@ -3,9 +3,13 @@ import './globals.css'
 import { LocationProvider } from '@/contexts/LocationContext'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.dev',
+  title: 'SayDone - Student Services Platform',
+  description: 'Connect with student services - jobs, rides, accommodation, and marketplace. Built for UK university students.',
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 }
 
 export default function RootLayout({
