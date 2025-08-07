@@ -113,33 +113,25 @@ export const saveLocationToStorage = (location: LocationData): void => {
 };
 
 export const getLocationFromStorage = (): LocationData | null => {
-  console.log('💾 getLocationFromStorage called');
   try {
     const location = localStorage.getItem('userLocation');
     const timestamp = localStorage.getItem('locationTimestamp');
     
-    console.log('💾 Storage contents:', { location, timestamp });
-    
     if (!location || !timestamp) {
-      console.log('💾 No location or timestamp found in storage');
       return null;
     }
     
     // Check if location is older than 1 hour
     const hourInMs = 60 * 60 * 1000;
     const age = Date.now() - parseInt(timestamp);
-    console.log('💾 Location age:', age, 'ms (limit:', hourInMs, 'ms)');
     
     if (age > hourInMs) {
-      console.log('💾 Location expired, returning null');
       return null;
     }
     
     const parsedLocation = JSON.parse(location);
-    console.log('💾 Returning cached location:', parsedLocation);
     return parsedLocation;
   } catch (error) {
-    console.log('💾 Error reading from storage:', error);
     return null;
   }
 };
@@ -151,9 +143,7 @@ export const clearLocationFromStorage = (): void => {
 
 // Get cached location only - does not fetch new location
 export const getCachedLocationOnly = (): LocationData | null => {
-  console.log('🔍 getCachedLocationOnly called');
   const result = getLocationFromStorage();
-  console.log('🔍 getCachedLocationOnly returning:', result);
   return result;
 };
 

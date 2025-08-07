@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { MapPin, Filter, X } from 'lucide-react';
 import { getCachedLocationOnly } from '@/lib/location';
 
@@ -27,19 +27,18 @@ export default function LocationFilter({
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [locationStatus, setLocationStatus] = useState<'available' | 'unavailable'>('unavailable');
 
+  // Ref to prevent duplicate filter calls
+  const lastFilterRef = useRef<string>('');
+
   // Memoize the callback to prevent infinite re-renders
   const memoizedOnFilterChange = useCallback(onFilterChange, [onFilterChange]);
 
   useEffect(() => {
-    console.log('🌍 LocationFilter effect triggered - checking cached location:', {
-      timestamp: new Date().toISOString()
-    });
     // Only check for cached location - no auto-detection
     checkCachedLocation();
     
     // Listen for location updates from homepage
     const handleLocationUpdate = () => {
-      console.log('📢 LocationFilter received location update event');
       checkCachedLocation();
     };
     
@@ -51,42 +50,34 @@ export default function LocationFilter({
   }, []); // Empty dependency array - only run on mount
 
   useEffect(() => {
-    console.log('📤 LocationFilter notifying parent of filter changes:', {
-      locationEnabled,
-      userLocation,
-      radius,
-      timestamp: new Date().toISOString()
-    });
-    // Notify parent of filter changes
-    memoizedOnFilterChange({
+    // Notify parent of filter changes only if they actually changed
+    const filterData = {
       lat: locationEnabled && userLocation ? userLocation.lat : undefined,
       lng: locationEnabled && userLocation ? userLocation.lng : undefined,
       radius: locationEnabled ? radius : undefined,
       hasLocation: locationEnabled && !!userLocation
-    });
+    };
+    
+    const filterString = JSON.stringify(filterData);
+    
+    // Only call if the filter data has actually changed
+    if (filterString !== lastFilterRef.current) {
+      lastFilterRef.current = filterString;
+      memoizedOnFilterChange(filterData);
+    }
   }, [userLocation, radius, locationEnabled, memoizedOnFilterChange]);
 
   const checkCachedLocation = useCallback(() => {
-    console.log('🔍 LocationFilter checking cached location...');
     try {
       const cachedLocation = getCachedLocationOnly();
-      console.log('💾 Cached location result:', cachedLocation);
       if (cachedLocation) {
         const newUserLocation = { lat: cachedLocation.latitude, lng: cachedLocation.longitude };
-        
-        console.log('📍 Setting cached location data:', {
-          newLocation: newUserLocation,
-          timestamp: new Date().toISOString()
-        });
         
         // Set location data immediately - don't rely on comparison
         setUserLocation(newUserLocation);
         setLocationStatus('available');
         setLocationEnabled(true);
-        
-        console.log('✅ Cached location applied - location filter enabled');
       } else {
-        console.log('❌ No cached location found');
         setLocationStatus('unavailable');
         setLocationEnabled(false);
         setUserLocation(null);

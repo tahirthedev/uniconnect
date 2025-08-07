@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { getCachedLocationOnly, getLocationWithCache, LocationData as LibLocationData } from '@/lib/location';
 
 interface LocationData {
@@ -51,12 +51,14 @@ export function LocationProvider({ children, defaultRadius = 20 }: LocationProvi
   }, []);
 
   // Helper function to create consistent location object
-  const createLocationObject = useCallback((data: LibLocationData | null): LocationData => {
+  const createLocationObject = useCallback((data: LibLocationData | null, currentRadius?: number): LocationData => {
+    const radius = currentRadius ?? defaultRadius;
+    
     if (!data || !data.latitude || !data.longitude) {
       return {
         hasLocation: false,
         loading: false,
-        radius: locationData.radius || defaultRadius
+        radius: radius
       };
     }
 
@@ -64,12 +66,12 @@ export function LocationProvider({ children, defaultRadius = 20 }: LocationProvi
     return {
       lat: converted.lat,
       lng: converted.lng,
-      radius: locationData.radius || defaultRadius,
+      radius: radius,
       hasLocation: true,
       address: converted.address,
       loading: false
     };
-  }, [locationData.radius, defaultRadius, convertLocationData]);
+  }, [defaultRadius, convertLocationData]);
 
   // Update location data only if it has actually changed
   const updateLocationData = useCallback((newData: LocationData) => {
@@ -82,11 +84,8 @@ export function LocationProvider({ children, defaultRadius = 20 }: LocationProvi
 
     // Only update if location data has actually changed
     if (newLocationString !== lastLocationStringRef.current) {
-      console.log('🌍 LocationContext: Location data changed, updating state');
       lastLocationStringRef.current = newLocationString;
       setLocationData(newData);
-    } else {
-      console.log('🚫 LocationContext: Location data unchanged, skipping update');
     }
   }, []);
 
@@ -94,7 +93,6 @@ export function LocationProvider({ children, defaultRadius = 20 }: LocationProvi
   useEffect(() => {
     if (initialLoadRef.current) return;
     
-    console.log('🌍 LocationContext: Initializing location...');
     initialLoadRef.current = true;
     
     const initializeLocation = async () => {
@@ -106,45 +104,39 @@ export function LocationProvider({ children, defaultRadius = 20 }: LocationProvi
         const cachedLocation = getCachedLocationOnly();
         
         if (cachedLocation && cachedLocation.latitude && cachedLocation.longitude) {
-          console.log('🌍 LocationContext: Found cached location:', cachedLocation);
-          const locationObj = createLocationObject(cachedLocation);
+          const locationObj = createLocationObject(cachedLocation, locationData.radius);
           updateLocationData(locationObj);
         } else {
-          console.log('🌍 LocationContext: No cached location found');
-          updateLocationData(createLocationObject(null));
+          updateLocationData(createLocationObject(null, locationData.radius));
         }
       } catch (err) {
-        console.error('🌍 LocationContext: Error initializing location:', err);
         setError(err instanceof Error ? err.message : 'Failed to initialize location');
-        updateLocationData(createLocationObject(null));
+        updateLocationData(createLocationObject(null, locationData.radius));
       } finally {
         setIsLoading(false);
       }
     };
 
     initializeLocation();
-  }, [createLocationObject, updateLocationData]);
+  }, []); // Remove dependencies to run only once
 
   // Listen for location updates from other parts of the app
   useEffect(() => {
     const handleLocationUpdate = (event: Event) => {
-      console.log('🌍 LocationContext: Received locationUpdated event');
       const cachedLocation = getCachedLocationOnly();
       
       if (cachedLocation) {
-        const locationObj = createLocationObject(cachedLocation);
+        const locationObj = createLocationObject(cachedLocation, locationData.radius);
         updateLocationData(locationObj);
       }
     };
 
     window.addEventListener('locationUpdated', handleLocationUpdate);
     return () => window.removeEventListener('locationUpdated', handleLocationUpdate);
-  }, [createLocationObject, updateLocationData]);
+  }, []); // Remove dependencies to make stable
 
   // Function to update location (for manual refresh)
   const updateLocation = useCallback(async (forceRefresh = false) => {
-    console.log('🌍 LocationContext: updateLocation called, forceRefresh:', forceRefresh);
-    
     try {
       setIsLoading(true);
       setError(null);
@@ -152,43 +144,36 @@ export function LocationProvider({ children, defaultRadius = 20 }: LocationProvi
       const newLocation = await getLocationWithCache(forceRefresh);
       
       if (newLocation && newLocation.latitude && newLocation.longitude) {
-        console.log('🌍 LocationContext: Got new location:', newLocation);
-        const locationObj = createLocationObject(newLocation);
+        const locationObj = createLocationObject(newLocation, locationData.radius);
         updateLocationData(locationObj);
       } else {
-        console.log('🌍 LocationContext: No location data received');
         setError('Could not get location');
       }
     } catch (err) {
-      console.error('🌍 LocationContext: Error updating location:', err);
       setError(err instanceof Error ? err.message : 'Failed to update location');
     } finally {
       setIsLoading(false);
     }
-  }, [createLocationObject, updateLocationData]);
+  }, []); // Remove dependencies to make stable
 
   // Function to update only the radius
   const updateRadius = useCallback((newRadius: number) => {
-    console.log('🌍 LocationContext: updateRadius called:', newRadius);
-    
     setLocationData(prev => {
       if (prev.radius === newRadius) {
-        console.log('🚫 LocationContext: Radius unchanged, skipping update');
         return prev;
       }
       
-      console.log('✅ LocationContext: Radius changed, updating');
       return { ...prev, radius: newRadius };
     });
   }, []);
 
-  const contextValue: LocationContextType = {
+  const contextValue: LocationContextType = useMemo(() => ({
     locationData,
     updateLocation,
     updateRadius,
     isLoading,
     error
-  };
+  }), [locationData, updateLocation, updateRadius, isLoading, error]);
 
   return (
     <LocationContext.Provider value={contextValue}>

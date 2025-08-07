@@ -33,7 +33,7 @@ export default function AccommodationPage() {
   const locationData = useLocationData();
   const { updateRadius } = useLocation();
   
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
@@ -42,19 +42,7 @@ export default function AccommodationPage() {
     location: 'all'
   });
 
-  useEffect(() => {
-    console.log('🔄 AccommodationPage useEffect triggered:', {
-      locationData: {
-        lat: locationData.lat,
-        lng: locationData.lng,
-        radius: locationData.radius,
-        hasLocation: locationData.hasLocation
-      },
-      timestamp: new Date().toISOString()
-    });
-    fetchAccommodationPosts();
-  }, [locationData.lat, locationData.lng, locationData.radius, locationData.hasLocation]);
-
+  // Fix: Include locationData in the dependencies array
   const fetchAccommodationPosts = useCallback(async () => {
     setLoading(true);
     try {
@@ -81,16 +69,15 @@ export default function AccommodationPage() {
     } finally {
       setLoading(false);
     }
-  }, []); // No dependencies
+  }, [locationData.lat, locationData.lng, locationData.radius, locationData.hasLocation]); // Fix: Add dependencies
+
+  useEffect(() => {
+    fetchAccommodationPosts();
+  }, [fetchAccommodationPosts]); // Fix: Only depend on the callback
 
   const handleLocationFilterChange = useCallback((data: any) => {
-    console.log('📍 Accommodation location filter change requested:', {
-      new: data,
-      timestamp: new Date().toISOString()
-    });
-    
-    // Only update radius if it has changed
-    if (data.radius !== locationData.radius) {
+    // Only update radius if it has changed and is a valid number
+    if (data.radius !== undefined && data.radius !== locationData.radius) {
       updateRadius(data.radius);
     }
   }, [locationData.radius, updateRadius]);
