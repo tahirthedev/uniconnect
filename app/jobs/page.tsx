@@ -1,151 +1,149 @@
 'use client';
 
 import { useState, useEffect, useCallback } from "react";
-import { ArrowLeft, MapPin, Clock, Briefcase, Building, Users, BookOpen, Search } from "lucide-react";
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, MapPin, Clock, Briefcase, Building, Users, BookOpen, Search, MessageCircle } from "lucide-react";
 import Navigation from "@/components/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import LocationFilter from "@/components/location-filter";
+import MessagingModal from '@/components/messaging-modal';
 import { useLocationData, useLocation } from '@/contexts/LocationContext';
+import { apiClient } from '@/lib/api';
 
 interface Job {
-  id: number;
+  _id: string;
   title: string;
-  company: string;
-  location: string;
-  type: string;
-  salary: string;
-  posted: string;
   description: string;
-  requirements: string[];
-  logo: string;
-  urgent?: boolean;
+  price?: {
+    amount: number;
+    type: string;
+    currency: string;
+    range?: {
+      min: number;
+      max: number;
+    };
+  };
+  location?: {
+    city: string;
+    state: string;
+    country: string;
+    type?: string;
+  };
+  details?: {
+    job?: {
+      type: string;
+      company: string;
+      companySize: string;
+      department: string;
+      experienceLevel: string;
+      requirements: string[];
+      skills: string[];
+      benefits: string[];
+      remote: boolean;
+      workLocation: string;
+      responsibilities: string;
+      applicationProcess: string;
+      applicationDeadline: string;
+      contactEmail: string;
+    };
+  };
+  author?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: string;
+  distance?: {
+    km: number;
+    calculated: boolean;
+    note?: string;
+  };
 }
 
 export default function JobsPage() {
   // Global location state
   const locationData = useLocationData();
   const { updateRadius } = useLocation();
+  const router = useRouter();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [showMessagingModal, setShowMessagingModal] = useState(false);
+  const [locationInfo, setLocationInfo] = useState<any>(null);
 
-  // Mock job data - in a real app this would come from API
-  const mockJobs = [
-    {
-      id: 1,
-      title: "Frontend React Developer",
-      company: "TechStart UK",
-      location: "London",
-      type: "Full-time",
-      salary: "£35,000 - £50,000",
-      posted: "2 hours ago",
-      description: "Looking for a passionate React developer to join our growing team in central London...",
-      requirements: ["React", "TypeScript", "Node.js"],
-      logo: "/placeholder.svg?height=50&width=50",
-      urgent: true,
-    },
-    {
-      id: 2,
-      title: "Part-time Graphic Designer",
-      company: "Creative Studio",
-      location: "Manchester",
-      type: "Part-time",
-      salary: "£15 - £22/hour",
-      posted: "4 hours ago",
-      description: "Creative studio seeking talented designer for various projects in Manchester city centre...",
-      requirements: ["Photoshop", "Illustrator", "Figma"],
-      logo: "/placeholder.svg?height=50&width=50",
-    },
-    {
-      id: 3,
-      title: "Campus Tour Guide",
-      company: "University of Edinburgh",
-      location: "Edinburgh",
-      type: "Part-time",
-      salary: "£11.50/hour",
-      posted: "1 day ago",
-      description: "Help prospective students discover our beautiful historic campus in Edinburgh...",
-      requirements: ["Communication", "Campus Knowledge", "Enthusiasm"],
-      logo: "/placeholder.svg?height=50&width=50",
-    },
-    {
-      id: 4,
-      title: "Data Science Intern",
-      company: "Analytics Pro",
-      location: "Birmingham",
-      type: "Internship",
-      salary: "£12 - £16/hour",
-      posted: "2 days ago",
-      description: "Join our data science team as an intern and gain hands-on experience with real projects...",
-      requirements: ["Python", "SQL", "Statistics"],
-      logo: "/placeholder.svg?height=50&width=50",
-    },
-    {
-      id: 5,
-      title: "Student Marketing Assistant",
-      company: "University of Bristol",
-      location: "Bristol",
-      type: "Part-time",
-      salary: "£10.50/hour",
-      posted: "3 days ago",
-      description: "Support our marketing team with social media and event promotion activities...",
-      requirements: ["Social Media", "Communication", "Creativity"],
-      logo: "/placeholder.svg?height=50&width=50",
-    },
-    {
-      id: 6,
-      title: "Freelance Web Developer",
-      company: "Various Clients",
-      location: "Remote",
-      type: "Freelance",
-      salary: "£20 - £40/hour",
-      posted: "1 week ago",
-      description: "Flexible freelance opportunities for experienced web developers...",
-      requirements: ["HTML/CSS", "JavaScript", "WordPress"],
-      logo: "/placeholder.svg?height=50&width=50",
+  // Helper function to format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
+  };
+
+  // Enhanced fetch function with smart backend integration
+  const fetchJobs = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Build API parameters - for jobs, don't use location filtering as it excludes remote jobs
+      const params: any = { category: 'jobs' };
+      
+      // For jobs, we'll handle location filtering on the frontend instead of backend
+      // This ensures remote jobs are always included
+      
+      const response = await apiClient.getPosts(params);
+      
+      if (response && response.posts) {
+        setJobs(response.posts);
+        
+        // Store location metadata from new backend
+        if (response.location) {
+          setLocationInfo(response.location);
+        }
+      } else {
+        setJobs([]);
+        setLocationInfo(null);
+      }
+    } catch (error) {
+      setJobs([]);
+      setLocationInfo(null);
+    } finally {
+      setLoading(false);
     }
-  ];
+  }, []); // No dependencies - only fetch once
 
   useEffect(() => {
-    // Initialize with mock data - in real app would fetch from API
-    setJobs(mockJobs);
-    setLoading(false);
-  }, []);
+    fetchJobs();
+  }, [fetchJobs]); // Fix: Only depend on the callback
 
   const handleLocationFilterChange = useCallback((data: any) => {
-    console.log('📍 Jobs location filter change requested:', {
-      new: data,
-      timestamp: new Date().toISOString()
-    });
-    
-    // Only update radius if it has changed
-    if (data.radius !== locationData.radius) {
+    // Only update radius if it has changed and is a valid number
+    if (data.radius !== undefined && data.radius !== locationData.radius) {
       updateRadius(data.radius);
-    }
-    
-    // In a real app, you would filter jobs based on location here
-    // For now, we'll use the existing location text filter
-    if (data?.location) {
-      setLocationFilter(data.location);
     }
   }, [locationData.radius, updateRadius]);
 
   const filteredJobs = jobs.filter((job: Job) => {
     const matchesSearch = !searchQuery || 
       job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (job.details?.job?.company && job.details.job.company.toLowerCase().includes(searchQuery.toLowerCase())) ||
       job.description.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesLocation = !locationFilter || 
-      job.location.toLowerCase().includes(locationFilter.toLowerCase());
+      (job.location && job.location.city.toLowerCase().includes(locationFilter.toLowerCase()));
     
-    const matchesType = !typeFilter || job.type === typeFilter;
+    const matchesType = !typeFilter || job.details?.job?.type === typeFilter;
     
     return matchesSearch && matchesLocation && matchesType;
   });
@@ -160,12 +158,12 @@ export default function JobsPage() {
 
   const getTypeColor = (type: string) => {
     const colors = {
-      'Full-time': 'bg-green-100 text-green-800',
-      'Part-time': 'bg-blue-100 text-blue-800',
-      'Internship': 'bg-purple-100 text-purple-800',
-      'Freelance': 'bg-orange-100 text-orange-800'
+      'full-time': 'bg-green-100 text-green-800',
+      'part-time': 'bg-blue-100 text-blue-800',
+      'internship': 'bg-purple-100 text-purple-800',
+      'freelance': 'bg-orange-100 text-orange-800'
     };
-    return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[type?.toLowerCase() as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
   if (loading) {
@@ -198,7 +196,10 @@ export default function JobsPage() {
               <p className="text-gray-600">Find student-friendly job opportunities across the UK</p>
             </div>
           </div>
-          <Button className="bg-orange-500 hover:bg-orange-600">
+          <Button 
+            className="bg-orange-500 hover:bg-orange-600"
+            onClick={() => router.push('/jobs/post')}
+          >
             Post a Job
           </Button>
         </div>
@@ -267,67 +268,115 @@ export default function JobsPage() {
                 Showing {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''}
               </div>
               {filteredJobs.map((job) => (
-                <Card key={job.id} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <Badge className={getTypeColor(job.type)}>
-                            {job.type}
-                          </Badge>
-                          {job.urgent && (
-                            <Badge className="bg-red-100 text-red-800">
-                              Urgent
+                <Card key={job._id} className="hover:shadow-lg transition-shadow cursor-pointer group">
+                  <div 
+                    onClick={() => router.push(`/jobs/${job._id}`)}
+                    className="block group-hover:scale-[1.02] transition-transform duration-200"
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <Badge className={getTypeColor(job.details?.job?.type || 'full-time')}>
+                              {job.details?.job?.type ? 
+                                job.details.job.type.split('-').map(word => 
+                                  word.charAt(0).toUpperCase() + word.slice(1)
+                                ).join('-') : 
+                                'Full-time'
+                              }
                             </Badge>
+                            {job.price && (
+                              <span className="text-lg font-bold text-orange-600">
+                                {job.price.currency === 'GBP' ? '£' : job.price.currency === 'USD' ? '$' : '€'}
+                                {job.price.range ? `${job.price.range.min}-${job.price.range.max}` : job.price.amount}
+                                {job.price.type === 'hourly' ? '/hr' : job.price.type === 'monthly' ? '/month' : '/year'}
+                              </span>
+                            )}
+                          </div>
+                          
+                          <h3 className="text-xl font-semibold text-gray-900 mb-2">{job.title}</h3>
+                          <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                            {job.details?.job?.company && (
+                              <div className="flex items-center">
+                                <Building className="h-4 w-4 mr-1" />
+                                {job.details.job.company}
+                              </div>
+                            )}
+                            {job.location && (
+                              <div className="flex items-center">
+                                <MapPin className="h-4 w-4 mr-1" />
+                                {job.location.state ? `${job.location.city}, ${job.location.state}` : job.location.city}
+                              </div>
+                            )}
+                            <div className="flex items-center">
+                              <Clock className="h-4 w-4 mr-1" />
+                              {formatDate(job.createdAt)}
+                            </div>
+                          </div>
+                          
+                          <p className="text-gray-700 mb-3">{job.description}</p>
+                          
+                          {job.details?.job?.requirements && job.details.job.requirements.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {job.details.job.requirements.map((req: string, index: number) => (
+                                <Badge key={index} variant="outline" className="text-xs">
+                                  {req}
+                                </Badge>
+                              ))}
+                            </div>
                           )}
-                          <span className="text-lg font-bold text-orange-600">
-                            {job.salary}
-                          </span>
-                        </div>
-                        
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">{job.title}</h3>
-                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                          <div className="flex items-center">
-                            <Building className="h-4 w-4 mr-1" />
-                            {job.company}
-                          </div>
-                          <div className="flex items-center">
-                            <MapPin className="h-4 w-4 mr-1" />
-                            {job.location}
-                          </div>
-                          <div className="flex items-center">
-                            <Clock className="h-4 w-4 mr-1" />
-                            {job.posted}
-                          </div>
-                        </div>
-                        
-                        <p className="text-gray-700 mb-3">{job.description}</p>
-                        
-                        <div className="flex flex-wrap gap-2">
-                          {job.requirements.map((req: string, index: number) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {req}
-                            </Badge>
-                          ))}
                         </div>
                       </div>
-                      
-                      <div className="ml-6 flex flex-col gap-2">
-                        <Button className="bg-orange-500 hover:bg-orange-600">
-                          Apply Now
-                        </Button>
-                        <Button variant="outline">
-                          Save Job
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
+                    </CardContent>
+                  </div>
+                  
+                  {/* Contact Button - Outside clickable area */}
+                  <div className="px-6 pb-4 flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/jobs/${job._id}`);
+                      }}
+                    >
+                      View Details
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      className="flex-1 bg-orange-500 hover:bg-orange-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedJob(job);
+                        setShowMessagingModal(true);
+                      }}
+                    >
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      Contact Employer
+                    </Button>
+                  </div>
                 </Card>
               ))}
             </>
           )}
         </div>
       </div>
+
+      {/* Messaging Modal */}
+      {showMessagingModal && selectedJob && (
+        <MessagingModal
+          isOpen={showMessagingModal}
+          onClose={() => {
+            setShowMessagingModal(false);
+            setSelectedJob(null);
+          }}
+          recipientId={selectedJob.author?._id}
+          recipientName={selectedJob.author?.name || 'Job Poster'}
+          rideTitle={selectedJob.title}
+          rideId={selectedJob._id}
+        />
+      )}
     </div>
   );
 }
