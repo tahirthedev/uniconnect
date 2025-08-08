@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ChevronDown, ChevronRight, Star, MapPin, Briefcase, Home, MessageCircle, Shield, Users, Clock, ArrowRight, GraduationCap, BookOpen, Coffee, Zap, Heart } from 'lucide-react'
+import { ChevronDown, ChevronRight, Star, MapPin, Briefcase, Home, MessageCircle, Shield, Users, Clock, ArrowRight, GraduationCap, BookOpen, Coffee, Zap, Heart, Twitter, Instagram, Linkedin, Mail } from 'lucide-react'
 import Image from "next/image"
 import Link from "next/link"
 import LocationDisplay from "@/components/location-display"
@@ -488,7 +488,7 @@ export default function HomePage() {
               <p className="text-gray-300 mb-4">
                 Connecting UK students with the services they need, when they need them.
               </p>
-              <div className="flex items-center space-x-3 animate-float">
+              <div className="flex items-center space-x-3 animate-float mb-6">
                 <Image
                   src="/logo.png"
                   alt="SayDone Logo"
@@ -498,11 +498,51 @@ export default function HomePage() {
                 />
                 <span className="text-xl font-bold">SayDone</span>
               </div>
+              
+              {/* Contact Email */}
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold mb-2 text-orange-400">Contact</h4>
+                <a 
+                  href="mailto:swagbroindustries@gmail.com"
+                  className="text-gray-300 hover:text-orange-400 transition-colors duration-200 text-sm"
+                >
+                  swagbroindustries@gmail.com
+                </a>
+              </div>
             </div>
           </div>
+          
+          {/* Social Icons - Centered above separator */}
+          <div className="flex justify-center items-center space-x-6 mt-8 mb-8">
+            <a 
+              href="https://x.com/saydoneofficial" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-300 hover:text-orange-400 transition-colors duration-200 hover:scale-110 transform"
+            >
+              <Twitter className="w-6 h-6" />
+            </a>
+            <a 
+              href="https://www.instagram.com/saydone_official/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-300 hover:text-orange-400 transition-colors duration-200 hover:scale-110 transform"
+            >
+              <Instagram className="w-6 h-6" />
+            </a>
+            <a 
+              href="https://www.linkedin.com/in/saydone-website-91a417379?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-300 hover:text-orange-400 transition-colors duration-200 hover:scale-110 transform"
+            >
+              <Linkedin className="w-6 h-6" />
+            </a>
+          </div>
+          
           <div className="border-t border-gray-800 mt-12 pt-8 text-center">
             <p className="text-gray-400 animate-slide-up">
-              © {new Date().getFullYear()} SayDone. All rights reserved. Made with <Heart className="w-4 h-4 inline text-orange-400 animate-pulse" /> for UK students.
+              © {new Date().getFullYear()} SayDone. All rights reserved. Made for students, by students.
             </p>
             
             {/* Hidden Location Display - Keeping location functionality */}
