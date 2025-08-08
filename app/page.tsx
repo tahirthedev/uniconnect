@@ -3,14 +3,23 @@
 import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ChevronDown, ChevronRight, Star, MapPin, Briefcase, Home, MessageCircle, Shield, Users, Clock, ArrowRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Star, MapPin, Briefcase, Home, MessageCircle, Shield, Users, Clock, ArrowRight, GraduationCap, BookOpen, Coffee, Zap, Heart } from 'lucide-react'
 import Image from "next/image"
 import Link from "next/link"
 import LocationDisplay from "@/components/location-display"
+import MagicBento from "@/components/MagicBento"
+import LightRays from "@/components/LightRays"
+import BackToTop from "@/components/back-to-top"
+import { useRouter } from 'next/navigation'
 
 export default function HomePage() {
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null)
   const [currentTestimonial, setCurrentTestimonial] = useState(0)
+  const router = useRouter()
+
+  const handleCardClick = (href: string) => {
+    router.push(href)
+  }
 
   const testimonials = [
     {
@@ -74,26 +83,53 @@ export default function HomePage() {
   }, [testimonials.length])
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white transition-colors duration-300">
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-orange-50 overflow-hidden pt-16">
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-100/20 to-transparent"></div>
-        <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+      <section id="hero" className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-orange-50 overflow-hidden pt-16 transition-colors duration-300">
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-100/20 to-transparent transition-colors duration-300"></div>
+        
+        {/* Dynamic Light Rays Background */}
+        <div className="absolute inset-0 w-full h-full">
+          <LightRays
+            raysOrigin="top-center"
+            raysColor="#FF8C42"
+            raysSpeed={0.8}
+            lightSpread={1.2}
+            rayLength={2.0}
+            followMouse={false}
+            mouseInfluence={0.0}
+            noiseAmount={0.05}
+            distortion={0.02}
+            className="hero-light-rays"
+          />
+        </div>
+        
+        {/* Floating student icons animation */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <GraduationCap className="absolute top-1/4 left-1/4 w-8 h-8 text-orange-300 animate-bounce opacity-30" style={{animationDelay: '0s'}} />
+          <BookOpen className="absolute top-1/3 right-1/4 w-6 h-6 text-orange-400 animate-bounce opacity-40" style={{animationDelay: '1s'}} />
+          <Coffee className="absolute bottom-1/4 left-1/3 w-7 h-7 text-orange-300 animate-bounce opacity-35" style={{animationDelay: '2s'}} />
+          <Zap className="absolute top-1/2 right-1/3 w-5 h-5 text-orange-400 animate-bounce opacity-30" style={{animationDelay: '0.5s'}} />
+          <Heart className="absolute bottom-1/3 right-1/5 w-6 h-6 text-orange-300 animate-bounce opacity-40" style={{animationDelay: '1.5s'}} />
+        </div>
+        
+        <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto animate-fade-in">
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight animate-slide-up transition-colors duration-300">
             Reimagine Student
-            <span className="block bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent animate-pulse">
               Connections
             </span>
           </h1>
-          <h2 className="text-xl sm:text-2xl lg:text-3xl text-gray-600 mb-12 font-light leading-relaxed">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl text-gray-600 mb-12 font-light leading-relaxed animate-slide-up transition-colors duration-300" style={{animationDelay: '0.2s'}}>
             Services that get things done. Real fast. Real local.
           </h2>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up" style={{animationDelay: '0.4s'}}>
             <Link href="/jobs">
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-2xl hover:shadow-orange-200 transition-all duration-300 transform hover:scale-105"
+                className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-2xl hover:shadow-orange-200 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
               >
+                <GraduationCap className="w-5 h-5 mr-2" />
                 Find Jobs
               </Button>
             </Link>
@@ -101,8 +137,9 @@ export default function HomePage() {
               <Button 
                 size="lg" 
                 variant="outline"
-                className="border-gray-300 hover:bg-gray-50 px-8 py-4 text-lg font-semibold rounded-full transition-all duration-300"
+                className="border-gray-300 hover:bg-gray-50 px-8 py-4 text-lg font-semibold rounded-full transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
               >
+                <Coffee className="w-5 h-5 mr-2" />
                 Book Rides
               </Button>
             </Link>
@@ -112,27 +149,27 @@ export default function HomePage() {
       </section>
 
       {/* Review Section */}
-      <section className="py-24 bg-white relative overflow-hidden">
+      <section id="reviews" className="py-24 bg-white relative overflow-hidden transition-colors duration-300">
         <div className="absolute inset-0 flex items-center justify-center opacity-5">
           <span className="text-[20rem] font-serif text-orange-300">"</span>
         </div>
-        <div className="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <blockquote className="text-2xl sm:text-3xl lg:text-4xl font-serif text-gray-800 leading-relaxed">
+        <div className="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 animate-slide-up">
+          <blockquote className="text-2xl sm:text-3xl lg:text-4xl font-serif text-gray-800 leading-relaxed transition-colors duration-300">
             "I never imagined finding rides, jobs, and rooms could be this smooth. SayDone just gets it."
           </blockquote>
         </div>
       </section>
 
       {/* Location Section */}
-      <section className="py-24 bg-gradient-to-br from-orange-50 to-gray-50">
+      <section id="locations" className="py-24 bg-gradient-to-br from-orange-50 to-gray-50 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">Your Local Hub</h2>
-            <p className="text-xl text-gray-600">Services tailored to your location</p>
+          <div className="text-center mb-16 animate-slide-up">
+            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4 transition-colors duration-300">Your Local Hub</h2>
+            <p className="text-xl text-gray-600 transition-colors duration-300">Services tailored to your location</p>
           </div>
           <div className="max-w-4xl mx-auto">
             <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div className="order-2 md:order-1">
+              <div className="order-2 md:order-1 animate-fade-in" style={{animationDelay: '0.2s'}}>
                 <LocationDisplay 
                   showMap={true}
                   onLocationUpdate={(location) => {
@@ -145,33 +182,33 @@ export default function HomePage() {
                   }}
                 />
               </div>
-              <div className="order-1 md:order-2">
+              <div className="order-1 md:order-2 animate-slide-up" style={{animationDelay: '0.1s'}}>
                 <div className="space-y-6">
-                  <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="flex items-start space-x-4 transform hover:scale-105 transition-transform duration-300">
+                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 animate-float">
                       <MapPin className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">Hyper-Local Services</h3>
-                      <p className="text-gray-600">Find rides, jobs, and accommodation within walking distance of your campus.</p>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2 transition-colors duration-300">Hyper-Local Services</h3>
+                      <p className="text-gray-600 transition-colors duration-300">Find rides, jobs, and accommodation within walking distance of your campus.</p>
                     </div>
                   </div>
-                  <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="flex items-start space-x-4 transform hover:scale-105 transition-transform duration-300">
+                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 animate-float" style={{animationDelay: '0.5s'}}>
                       <Shield className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">Privacy Protected</h3>
-                      <p className="text-gray-600">Your location is used only to show relevant local services. We never share your exact location.</p>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2 transition-colors duration-300">Privacy Protected</h3>
+                      <p className="text-gray-600 transition-colors duration-300">Your location is used only to show relevant local services. We never share your exact location.</p>
                     </div>
                   </div>
-                  <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="flex items-start space-x-4 transform hover:scale-105 transition-transform duration-300">
+                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 animate-float" style={{animationDelay: '1s'}}>
                       <Clock className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">Real-Time Updates</h3>
-                      <p className="text-gray-600">Get instant notifications for new opportunities in your area.</p>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2 transition-colors duration-300">Real-Time Updates</h3>
+                      <p className="text-gray-600 transition-colors duration-300">Get instant notifications for new opportunities in your area.</p>
                     </div>
                   </div>
                 </div>
@@ -222,79 +259,34 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Services Section */}
-      <section className="py-24 bg-white">
+      {/* Services Section - Magic Bento */}
+      <section id="services" className="py-24 bg-white transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">All Your Student Essentials</h2>
-            <p className="text-xl text-gray-600">Everything you need in one place</p>
+          <div className="text-center mb-16 animate-slide-up">
+            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4 transition-colors duration-300">All Your Student Essentials</h2>
+            <p className="text-xl text-gray-600 transition-colors duration-300">Everything you need in one place</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            <Link href="/jobs" className="group">
-              <Card className="bg-white border-2 border-gray-100 hover:border-orange-300 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <Briefcase className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">Jobs</h3>
-                  <p className="text-sm text-gray-600">Part-time opportunities</p>
-                </CardContent>
-              </Card>
-            </Link>
-            
-            <Link href="/ridesharing" className="group">
-              <Card className="bg-white border-2 border-gray-100 hover:border-orange-300 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <MapPin className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">Rides</h3>
-                  <p className="text-sm text-gray-600">Share the journey</p>
-                </CardContent>
-              </Card>
-            </Link>
-            
-            <Link href="/accommodation" className="group">
-              <Card className="bg-white border-2 border-gray-100 hover:border-orange-300 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <Home className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">Accommodation</h3>
-                  <p className="text-sm text-gray-600">Find your home</p>
-                </CardContent>
-              </Card>
-            </Link>
-            
-            <Link href="/marketplace" className="group">
-              <Card className="bg-white border-2 border-gray-100 hover:border-orange-300 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <Star className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">Marketplace</h3>
-                  <p className="text-sm text-gray-600">Buy & sell items</p>
-                </CardContent>
-              </Card>
-            </Link>
-            
-            <Link href="/currency" className="group">
-              <Card className="bg-white border-2 border-gray-100 hover:border-orange-300 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <Clock className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">Currency</h3>
-                  <p className="text-sm text-gray-600">Exchange rates</p>
-                </CardContent>
-              </Card>
-            </Link>
+          
+          <div className="animate-fade-in" style={{animationDelay: '0.2s'}}>
+            <MagicBento 
+              textAutoHide={true}
+              enableStars={true}
+              enableSpotlight={true}
+              enableBorderGlow={true}
+              enableTilt={true}
+              enableMagnetism={true}
+              clickEffect={true}
+              spotlightRadius={300}
+              particleCount={8}
+              glowColor="251, 146, 60"
+              onCardClick={handleCardClick}
+            />
           </div>
         </div>
       </section>
 
       {/* Safe & Trusted Community Section */}
-      <section className="py-24 bg-white">
+      <section id="community" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">A Community You Can Count On</h2>
@@ -338,7 +330,7 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-24 bg-gray-50 overflow-hidden">
+      <section id="testimonials" className="py-24 bg-gray-50 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">What Students Say</h2>
@@ -394,7 +386,7 @@ export default function HomePage() {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-24 bg-white">
+      <section id="faq" className="py-24 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h2>
@@ -460,43 +452,43 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-16">
+      <footer className="bg-gray-900 text-white py-16 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8">
-            <div>
+            <div className="animate-fade-in">
               <h3 className="text-lg font-semibold mb-4 text-orange-400">Quick Links</h3>
               <ul className="space-y-2">
-                <li><Link href="/jobs" className="text-gray-300 hover:text-white transition-colors">Jobs</Link></li>
-                <li><Link href="/ridesharing" className="text-gray-300 hover:text-white transition-colors">Rides</Link></li>
-                <li><Link href="/accommodation" className="text-gray-300 hover:text-white transition-colors">Accommodation</Link></li>
-                <li><Link href="/marketplace" className="text-gray-300 hover:text-white transition-colors">Marketplace</Link></li>
-                <li><Link href="/currency" className="text-gray-300 hover:text-white transition-colors">Currency Exchange</Link></li>
+                <li><Link href="/jobs" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Jobs</Link></li>
+                <li><Link href="/ridesharing" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Rides</Link></li>
+                <li><Link href="/accommodation" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Accommodation</Link></li>
+                <li><Link href="/marketplace" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Marketplace</Link></li>
+                <li><Link href="/currency" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Currency Exchange</Link></li>
               </ul>
             </div>
-            <div>
+            <div className="animate-fade-in" style={{animationDelay: '0.1s'}}>
               <h3 className="text-lg font-semibold mb-4 text-orange-400">Resources</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Help Center</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Contact</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Safety Tips</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Community Guidelines</a></li>
+                <li><a href="#" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Help Center</a></li>
+                <li><a href="#" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Contact</a></li>
+                <li><a href="#" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Safety Tips</a></li>
+                <li><a href="#" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Community Guidelines</a></li>
               </ul>
             </div>
-            <div>
+            <div className="animate-fade-in" style={{animationDelay: '0.2s'}}>
               <h3 className="text-lg font-semibold mb-4 text-orange-400">Legal</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Cookie Policy</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Data Protection</a></li>
+                <li><a href="#" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Privacy Policy</a></li>
+                <li><a href="#" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Terms of Service</a></li>
+                <li><a href="#" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Cookie Policy</a></li>
+                <li><a href="#" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Data Protection</a></li>
               </ul>
             </div>
-            <div>
+            <div className="animate-fade-in" style={{animationDelay: '0.3s'}}>
               <h3 className="text-lg font-semibold mb-4 text-orange-400">About SayDone</h3>
               <p className="text-gray-300 mb-4">
                 Connecting UK students with the services they need, when they need them.
               </p>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 animate-float">
                 <Image
                   src="/logo.png"
                   alt="SayDone Logo"
@@ -509,8 +501,8 @@ export default function HomePage() {
             </div>
           </div>
           <div className="border-t border-gray-800 mt-12 pt-8 text-center">
-            <p className="text-gray-400">
-              © {new Date().getFullYear()} SayDone. All rights reserved. Made with for UK students.
+            <p className="text-gray-400 animate-slide-up">
+              © {new Date().getFullYear()} SayDone. All rights reserved. Made with <Heart className="w-4 h-4 inline text-orange-400 animate-pulse" /> for UK students.
             </p>
             
             {/* Hidden Location Display - Keeping location functionality */}
@@ -529,6 +521,9 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+      
+      {/* Back to Top Button */}
+      <BackToTop />
     </div>
   )
 }

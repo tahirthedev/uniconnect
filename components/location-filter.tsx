@@ -103,7 +103,7 @@ export default function LocationFilter({
 
   if (compact) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 relative">
         <button
           onClick={toggleLocation}
           disabled={!userLocation}
@@ -122,12 +122,14 @@ export default function LocationFilter({
         
         {locationEnabled && userLocation && (
           <select 
-            value={radius}
+            value={radius} 
             onChange={(e) => handleRadiusChange(parseInt(e.target.value))}
-            className="text-xs border border-gray-200 rounded px-2 py-1"
+            className="h-7 w-20 text-xs border border-gray-300 rounded-md bg-white px-2 py-1 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
           >
             {showRadiusOptions.map(option => (
-              <option key={option} value={option}>{option}km</option>
+              <option key={option} value={option}>
+                {option}km
+              </option>
             ))}
           </select>
         )}
@@ -174,9 +176,12 @@ export default function LocationFilter({
       {locationEnabled && userLocation && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-green-800">
-              📍 Showing results within {radius}km
-            </span>
+            <div className="flex items-center space-x-2">
+              <MapPin className="h-4 w-4 text-green-600" />
+              <span className="text-sm font-medium text-green-800">
+                Showing results within {radius}km
+              </span>
+            </div>
             <button
               onClick={() => setLocationEnabled(false)}
               className="text-green-600 hover:text-green-800"
@@ -186,31 +191,28 @@ export default function LocationFilter({
           </div>
           
           <div className="space-y-2">
-            <label className="text-xs text-green-700">Search Radius</label>
-            <div className="flex gap-2">
+            <label className="text-xs text-green-700 font-medium">Search Radius</label>
+            <select 
+              value={radius} 
+              onChange={(e) => handleRadiusChange(parseInt(e.target.value))}
+              className="w-full bg-white border border-green-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            >
               {showRadiusOptions.map(option => (
-                <button
-                  key={option}
-                  onClick={() => handleRadiusChange(option)}
-                  className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                    radius === option
-                      ? 'bg-green-600 text-white'
-                      : 'bg-white text-green-700 border border-green-300 hover:bg-green-100'
-                  }`}
-                >
-                  {option}km
-                </button>
+                <option key={option} value={option}>
+                  {option}km radius
+                </option>
               ))}
-            </div>
+            </select>
           </div>
         </div>
       )}
 
       {!userLocation && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-          <p className="text-sm text-yellow-800">
-            📍 Please update your location on the homepage to use location-based filtering.
-          </p>
+          <div className="flex items-center gap-2 text-yellow-800 text-sm">
+            <MapPin className="h-4 w-4" />
+            <span>Please update your location on the homepage to use location-based filtering.</span>
+          </div>
         </div>
       )}
     </div>

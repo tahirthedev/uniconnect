@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { ArrowLeft, Search, MapPin, Filter } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { ArrowLeft, MapPin, Calendar, User, Filter } from "lucide-react";
 import Link from "next/link";
-import Navigation from "@/components/navigation";
 import LocationFilter from "@/components/location-filter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 import { ApiClient } from "@/lib/api";
 import { useLocationData, useLocation } from '@/contexts/LocationContext';
 
@@ -32,6 +34,10 @@ interface Post {
     name: string;
     email: string;
   };
+  author?: {
+    name: string;
+    email: string;
+  };
   createdAt: string;
   distance?: number;
   distanceKm?: number;
@@ -47,63 +53,90 @@ export default function PostsPage() {
   const [locationBased, setLocationBased] = useState(false);
   const [filters, setFilters] = useState({
     category: '',
-    priceMin: '',
-    priceMax: '',
   });
 
-  useEffect(() => {
-    console.log('🔄 PostsPage useEffect triggered:', {
-      filters,
-      locationData: {
-        lat: locationData.lat,
-        lng: locationData.lng,
-        radius: locationData.radius,
-        hasLocation: locationData.hasLocation
-      },
-      timestamp: new Date().toISOString()
-    });
-    loadPosts();
-  }, [filters, locationData.lat, locationData.lng, locationData.radius, locationData.hasLocation]);
+  // Ref to prevent duplicate API calls
+  const loadingRef = useRef(false);
+  const mountedRef = useRef(true);
 
-  const loadPosts = useCallback(async () => {
+  const loadPosts = async () => {
+    // Prevent duplicate calls
+    if (loadingRef.current) {
+      return;
+    }
+
     try {
+      loadingRef.current = true;
       setLoading(true);
       
       const params: any = {};
       
-      // Add location parameters if available
-      if (locationData.hasLocation && locationData.lat && locationData.lng) {
-        params.lat = locationData.lat;
-        params.lng = locationData.lng;
-        params.radius = locationData.radius || 20;
+      // Add category filter
+      if (filters.category) {
+        // If pick-drop is selected, we need to get both ridesharing and pick-drop posts
+        if (filters.category === 'pick-drop') {
+          // Handle pick-drop by fetching both ridesharing and pick-drop categories
+          const [ridesharingResponse, pickDropResponse] = await Promise.all([
+            apiClient.getPosts({ category: 'ridesharing' }),
+            apiClient.getPosts({ category: 'pick-drop' })
+          ]);
+          
+          // Combine and deduplicate posts
+          const combinedPosts = [
+            ...(ridesharingResponse.posts || []),
+            ...(pickDropResponse.posts || [])
+          ];
+          
+          // Remove duplicates based on _id
+          const uniquePosts = combinedPosts.filter((post, index, self) => 
+            index === self.findIndex(p => p._id === post._id)
+          );
+          
+          if (mountedRef.current) {
+            setPosts(uniquePosts);
+            setLocationBased(false); // No location filtering for combined results
+          }
+          return; // Exit early for pick-drop case
+        } else {
+          params.category = filters.category;
+        }
       }
       
-      // Add other filters
-      if (filters.category) params.category = filters.category;
-      if (filters.priceMin) params.priceMin = parseFloat(filters.priceMin);
-      if (filters.priceMax) params.priceMax = parseFloat(filters.priceMax);
-      
       const response = await apiClient.getPosts(params);
-      setPosts(response.posts || []);
-      setLocationBased(response.locationBased || false);
+      // Check if component is still mounted before updating state
+      if (mountedRef.current) {
+        setPosts(response.posts || []);
+        setLocationBased(response.location?.userLocation ? true : false);
+      }
     } catch (error) {
       console.error('Error loading posts:', error);
-      setPosts([]);
+      if (mountedRef.current) {
+        setPosts([]);
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+      loadingRef.current = false;
     }
-  }, []); // No dependencies
+  };
+
+  useEffect(() => {
+    loadPosts();
+  }, [filters.category, locationData.hasLocation, locationData.lat, locationData.lng, locationData.radius]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const handleFilterChange = useCallback((key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
 
   const handleLocationFilterChange = useCallback((newLocationFilter: any) => {
-    console.log('📍 Posts location filter change requested:', {
-      new: newLocationFilter,
-      timestamp: new Date().toISOString()
-    });
-    
     // Only update radius if it has changed
     if (newLocationFilter.radius !== locationData.radius) {
       updateRadius(newLocationFilter.radius);
@@ -111,37 +144,46 @@ export default function PostsPage() {
   }, [locationData.radius, updateRadius]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center mb-8">
-          <Link href="/" className="mr-4">
-            <ArrowLeft className="h-6 w-6 text-gray-600 hover:text-orange-600" />
-          </Link>
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900">Browse Posts</h1>
-            <div className="flex items-center space-x-2 text-gray-600">
-              <p>All posts from the community</p>
-              {locationBased && (
-                <>
-                  <span>•</span>
-                  <div className="flex items-center space-x-1">
-                    <MapPin className="h-4 w-4 text-green-600" />
-                    <span className="text-sm text-green-600">Showing nearby results ({locationData.radius || 20}km radius)</span>
-                  </div>
-                </>
-              )}
+        <div className="mb-8">
+          <div className="flex items-center mb-4">
+            <Link href="/" className="mr-4">
+              <Button variant="ghost" size="sm" className="p-2 hover:bg-white/80">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <div className="flex-1">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                Browse Posts
+              </h1>
+              <p className="text-gray-600 mt-1">Discover opportunities from the community</p>
             </div>
           </div>
+          
+          {locationBased && (
+            <div className="flex items-center space-x-2 text-sm">
+              <div className="flex items-center px-3 py-1 bg-green-50 text-green-700 rounded-full">
+                <MapPin className="h-4 w-4 mr-1" />
+                <span>Showing nearby results ({locationData.radius || 20}km radius)</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="mb-8 border-0 shadow-md bg-white/80 backdrop-blur-sm overflow-visible">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <Filter className="h-5 w-5 text-orange-600" />
+              <h2 className="text-lg font-semibold">Filters</h2>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 overflow-visible">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-visible">
               {/* Location Filter */}
-              <div className="lg:col-span-1">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Location & Radius</label>
                 <LocationFilter 
                   onFilterChange={handleLocationFilterChange}
                   defaultRadius={locationData.radius || 20}
@@ -151,11 +193,11 @@ export default function PostsPage() {
               
               {/* Category Filter */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
                 <select 
-                  value={filters.category}
+                  value={filters.category || ""} 
                   onChange={(e) => handleFilterChange('category', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 >
                   <option value="">All Categories</option>
                   <option value="pick-drop">Pick & Drop</option>
@@ -165,37 +207,33 @@ export default function PostsPage() {
                   <option value="currency-exchange">Currency Exchange</option>
                 </select>
               </div>
-              
-              {/* Price Filters */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Price Min</label>
-                <input
-                  type="number"
-                  value={filters.priceMin}
-                  onChange={(e) => handleFilterChange('priceMin', e.target.value)}
-                  placeholder="0"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Price Max</label>
-                <input
-                  type="number"
-                  value={filters.priceMax}
-                  onChange={(e) => handleFilterChange('priceMax', e.target.value)}
-                  placeholder="1000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Loading State */}
         {loading && (
-          <div className="flex justify-center items-center h-64">
-            <div className="text-lg">Loading posts...</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <Card key={index} className="overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-2/3 mb-4" />
+                  <div className="flex justify-between items-center">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
 
@@ -203,38 +241,70 @@ export default function PostsPage() {
         {!loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {posts.length === 0 ? (
-              <div className="col-span-full text-center py-12">
-                <p className="text-gray-500 text-lg">No posts found</p>
-                <p className="text-gray-400">Try adjusting your filters or expanding your search radius</p>
+              <div className="col-span-full">
+                <Card className="text-center py-16 bg-white/50 border-dashed border-2 border-gray-200">
+                  <CardContent className="space-y-4">
+                    <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                      <Filter className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No posts found</h3>
+                      <p className="text-gray-500 max-w-sm mx-auto">
+                        Try adjusting your filters or expanding your search radius to see more results
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             ) : (
               posts.map((post) => (
-                <Card key={post._id} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-3">
-                      <Badge variant="secondary" className="text-xs">
-                        {post.category.replace('-', ' ')}
-                      </Badge>
-                      {post.distanceKm !== undefined && (
-                        <div className="flex items-center space-x-1 text-green-600">
-                          <MapPin className="h-3 w-3" />
-                          <span className="text-xs font-medium">{post.distanceKm}km away</span>
+                <Card key={post._id} className="hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src="" alt={post.authorInfo?.name || post.author?.name || 'User'} />
+                          <AvatarFallback className="bg-orange-100 text-orange-600 text-sm">
+                            {(post.authorInfo?.name || post.author?.name || 'U').charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium">{post.authorInfo?.name || post.author?.name || 'Anonymous'}</p>
+                          <div className="flex items-center text-xs text-gray-500">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {new Date(post.createdAt).toLocaleDateString()}
+                          </div>
                         </div>
-                      )}
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        {post.category === 'ridesharing' || post.category === 'pick-drop' 
+                          ? 'Pick & Drop' 
+                          : post.category.replace('-', ' ')
+                        }
+                      </Badge>
                     </div>
-                    
+                  </CardHeader>
+                  <CardContent className="pt-0">
                     <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
                       {post.title}
                     </h3>
                     
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-3">
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">
                       {post.description}
                     </p>
                     
+                    <Separator className="my-4" />
+                    
                     <div className="flex justify-between items-center">
-                      <div className="text-sm text-gray-500">
-                        📍 {post.location.city}
+                      <div className="flex items-center text-sm text-gray-500">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        {post.location.city}
                         {post.location.state && `, ${post.location.state}`}
+                        {post.distanceKm !== undefined && (
+                          <span className="ml-2 text-green-600 font-medium">
+                            • {post.distanceKm}km away
+                          </span>
+                        )}
                       </div>
                       
                       {post.price && (
@@ -252,7 +322,7 @@ export default function PostsPage() {
                     <div className="mt-4 pt-3 border-t border-gray-100">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500">
-                          by {post.authorInfo?.name || 'Anonymous'}
+                          by {post.author?.name || post.authorInfo?.name || 'Anonymous'}
                         </span>
                         <span className="text-xs text-gray-400">
                           {new Date(post.createdAt).toLocaleDateString()}

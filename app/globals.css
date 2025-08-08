@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  /* Always reserve space for scrollbar to prevent layout shifts */
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -11,8 +16,70 @@ body {
     text-wrap: balance;
   }
   
+  .smooth-scroll {
+    scroll-behavior: smooth;
+  }
+  
+  .scroll-pt-20 {
+    scroll-padding-top: 5rem;
+  }
+  
   .animate-scroll {
     animation: scroll 30s linear infinite;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 1s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.8s ease-out;
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 20px rgba(251, 146, 60, 0.3);
+    }
+    to {
+      box-shadow: 0 0 30px rgba(251, 146, 60, 0.6);
+    }
   }
   
   @keyframes scroll {
@@ -101,6 +168,37 @@ body {
   * {
     @apply border-border;
   }
+  
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem; /* Account for fixed navigation */
+  }
+  
+  /* Enhanced smooth scrolling for better performance */
+  * {
+    scroll-behavior: smooth;
+  }
+  
+  /* Smooth transitions for scroll-related elements */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+  
+  /* Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  
   body {
     @apply bg-background text-foreground;
   }
