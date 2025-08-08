@@ -18,9 +18,9 @@ const { findCity, getNearbyCities, calculateDistance } = require('./ukCities');
 function buildLocationQuery(params) {
   const { category, lat, lng, radius = 20, city } = params;
   
-  // For non-accommodation categories, use existing logic
+  // For non-accommodation categories, use standard logic (now includes ridesharing improvements)
   if (category !== 'accommodation') {
-    return buildStandardLocationQuery(params);
+    return buildStandardLocationQuery({ lat, lng, radius, city, category });
   }
   
   // Accommodation-specific smart location matching
@@ -132,16 +132,21 @@ function buildAccommodationLocationQuery({ lat, lng, radius = 20, city }) {
 /**
  * Build standard location query for non-accommodation categories
  */
-function buildStandardLocationQuery({ lat, lng, radius = 20, city }) {
+function buildStandardLocationQuery({ lat, lng, radius = 20, city, category }) {
   const metadata = {
     searchType: 'standard',
     fallbacksUsed: []
   };
   
-  // GPS-based search
+  // For ridesharing, use more flexible location matching
+  if (category === 'pick-drop' || category === 'ridesharing') {
+    return buildRidesharingLocationQuery({ lat, lng, radius, city });
+  }
+  
+  // GPS-based search for other categories
   if (lat && lng) {
     const query = {
-      'location.coordinates': {
+      'location.geoLocation': {
         $geoWithin: {
           $centerSphere: [[parseFloat(lng), parseFloat(lat)], radius / 6378.1]
         }
@@ -166,6 +171,60 @@ function buildStandardLocationQuery({ lat, lng, radius = 20, city }) {
   // No location filter
   metadata.fallbacksUsed.push('no_location');
   return { query: {}, metadata };
+}
+
+/**
+ * Build ridesharing-specific location query with flexible matching
+ */
+function buildRidesharingLocationQuery({ lat, lng, radius = 20, city }) {
+  const metadata = {
+    searchType: 'ridesharing',
+    fallbacksUsed: []
+  };
+  
+  const queries = [];
+  
+  // Strategy 1: GPS-based with large radius (people travel far for rides)
+  if (lat && lng) {
+    const expandedRadius = Math.max(radius, 100); // At least 100km for ridesharing
+    
+    queries.push({
+      'location.geoLocation': {
+        $geoWithin: {
+          $centerSphere: [[parseFloat(lng), parseFloat(lat)], expandedRadius / 6378.1]
+        }
+      }
+    });
+    
+    metadata.searchArea = {
+      center: { lat: parseFloat(lat), lng: parseFloat(lng) },
+      radius: expandedRadius
+    };
+    metadata.fallbacksUsed.push('gps_with_large_radius');
+  }
+  
+  // Strategy 2: City-based search (from/to locations)
+  if (city) {
+    queries.push({
+      $or: [
+        { 'location.city': new RegExp(city, 'i') },
+        { 'details.ride.from': new RegExp(city, 'i') },
+        { 'details.ride.to': new RegExp(city, 'i') }
+      ]
+    });
+    metadata.fallbacksUsed.push('city_and_route_match');
+  }
+  
+  // Strategy 3: If no location provided, show all rides
+  if (queries.length === 0) {
+    queries.push({});
+    metadata.fallbacksUsed.push('show_all_rides');
+  }
+  
+  // Combine strategies with OR
+  const finalQuery = queries.length === 1 ? queries[0] : { $or: queries };
+  
+  return { query: finalQuery, metadata };
 }
 
 /**

@@ -7,12 +7,6 @@ const { buildLocationQuery, addLocationMetadata, sortByLocationRelevance } = req
 // Create a new post
 const createPost = async (req, res) => {
   try {
-    console.log('🔥 BACKEND RECEIVED req.body:', JSON.stringify(req.body, null, 2));
-    console.log('🔥 BACKEND req.body.title:', req.body.title);
-    console.log('🔥 BACKEND req.body.category:', req.body.category);
-    console.log('🔥 BACKEND req.body.description:', req.body.description);
-    console.log('🔥 BACKEND req.body.location:', req.body.location);
-    
     const {
       title,
       description,
@@ -106,14 +100,9 @@ const getPosts = async (req, res) => {
       radius = 20 // radius in kilometers
     } = req.query;
 
-    console.log('🔍 Posts API called with params:', { category, city, lat, lng, radius });
-
     // Build smart location query using new system
     const locationResult = buildLocationQuery({ category, lat, lng, radius, city });
     const { query: locationQuery, metadata: locationMetadata } = locationResult;
-
-    console.log('🌍 Location query built:', JSON.stringify(locationQuery, null, 2));
-    console.log('📊 Location metadata:', locationMetadata);
 
     // Base filters (always applied)
     const baseFilters = {
@@ -138,8 +127,6 @@ const getPosts = async (req, res) => {
       ...baseFilters,
       ...locationQuery
     };
-
-    console.log('🔎 Final MongoDB query:', JSON.stringify(finalQuery, null, 2));
 
     // Sorting options
     let sortOptions = {};
@@ -176,8 +163,6 @@ const getPosts = async (req, res) => {
         .lean(),
       Post.countDocuments(finalQuery)
     ]);
-
-    console.log(`📋 Found ${posts.length} posts (${totalCount} total)`);
 
     // Add like counts and user's like status
     let enhancedPosts = posts.map(post => ({
@@ -222,8 +207,6 @@ const getPosts = async (req, res) => {
     if (enhancedPosts.length === 0 && category === 'accommodation') {
       response.suggestions = generateAccommodationSuggestions(locationMetadata, userLocation);
     }
-
-    console.log('✅ Sending response with', enhancedPosts.length, 'posts');
     res.json(response);
 
   } catch (error) {
@@ -300,15 +283,11 @@ const getPostById = async (req, res) => {
     }
 
     // Increment view count (async, don't wait)
-    Post.findByIdAndUpdate(postId, { $inc: { views: 1 } }).catch(err => 
-      console.log('Error updating view count:', err)
-    );
+    Post.findByIdAndUpdate(postId, { $inc: { views: 1 } }).catch(() => {});
 
     // Log user activity if authenticated
     if (req.user) {
-      UserActivity.logActivity(req.user._id, 'postsViewed').catch(err =>
-        console.log('Error logging activity:', err)
-      );
+      UserActivity.logActivity(req.user._id, 'postsViewed').catch(() => {});
     }
 
     // Prepare response
@@ -479,9 +458,7 @@ const toggleLike = async (req, res) => {
     } else {
       post.likes.push(userId);
       // Log user activity
-      await UserActivity.logActivity(req.user._id, 'likes').catch(err =>
-        console.log('Error logging activity:', err)
-      );
+      await UserActivity.logActivity(req.user._id, 'likes').catch(() => {});
     }
 
     await post.save();
@@ -552,9 +529,7 @@ const searchPosts = async (req, res) => {
 
     // Log search activity
     if (req.user) {
-      UserActivity.logActivity(req.user._id, 'searches').catch(err =>
-        console.log('Error logging activity:', err)
-      );
+      UserActivity.logActivity(req.user._id, 'searches').catch(() => {});
     }
 
     const postsWithLikes = posts.map(post => ({
