@@ -31,7 +31,7 @@ const postSchema = new mongoose.Schema({
     currency: { type: String, default: 'USD' },
     type: { 
       type: String, 
-      enum: ['fixed', 'negotiable', 'free', 'hourly', 'daily', 'monthly'],
+      enum: ['fixed', 'hourly', 'negotiable', 'yearly', 'monthly'],
       default: 'fixed'
     }
   },
