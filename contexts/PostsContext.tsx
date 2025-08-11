@@ -175,7 +175,7 @@ export function PostsProvider({ children }: PostsProviderProps) {
         })
         .sort((a, b) => a.distance - b.distance);
       
-      // If we have nearby posts, return them; otherwise return all category posts
+      // Only use GPS filtering if it returns results, otherwise return all category posts
       return postsWithDistance.length > 0 ? postsWithDistance : categoryPosts;
     }
     
@@ -212,7 +212,7 @@ export function PostsProvider({ children }: PostsProviderProps) {
         })
         .sort((a, b) => a.distance - b.distance); // Sort by distance
       
-      // If we have nearby posts, return them
+      // If we have nearby posts, return them; otherwise fall back to city filtering or all posts
       if (postsWithDistance.length > 0) {
         return postsWithDistance;
       }
@@ -246,7 +246,7 @@ export function PostsProvider({ children }: PostsProviderProps) {
       const radius = locationData.radius || 50; // Use user's radius or 50km default
       
       // Add distance calculations and filter by proximity
-      filtered = filtered
+      const gpsFiltered = filtered
         .map(post => {
           if (post.location.coordinates && 
               post.location.coordinates.latitude && 
@@ -267,6 +267,12 @@ export function PostsProvider({ children }: PostsProviderProps) {
           return post.distance <= radius;
         })
         .sort((a, b) => a.distance - b.distance);
+      
+      // Only use GPS filtering if it returns results, otherwise fall back to all posts
+      if (gpsFiltered.length > 0) {
+        filtered = gpsFiltered;
+      }
+      // If no GPS results, continue with all posts (no filtering applied)
     }
 
     // 2. Category filter

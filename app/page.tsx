@@ -12,7 +12,7 @@ import LightRays from "@/components/LightRays"
 import BackToTop from "@/components/back-to-top"
 import { useRouter } from 'next/navigation'
 import { useLocationData } from '@/contexts/LocationContext'
-import { usePostsWithFilters } from '@/contexts/PostsContext'
+import { usePosts, usePostsWithFilters } from '@/contexts/PostsContext'
 
 export default function HomePage() {
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null)
@@ -22,6 +22,7 @@ export default function HomePage() {
   const [selectedCity, setSelectedCity] = useState('all')
   const router = useRouter()
   const locationData = useLocationData()
+  const { allPosts } = usePosts()
 
   // Use the new Posts context with filters
   const { posts, loading, error } = usePostsWithFilters({
@@ -30,8 +31,8 @@ export default function HomePage() {
     city: selectedCity === 'all' ? undefined : selectedCity
   })
 
-  // Get available cities from posts
-  const availableCities = Array.from(new Set(posts.map(post => post.location.city))).sort()
+  // Get available cities from ALL posts, not filtered posts
+  const availableCities = Array.from(new Set(allPosts.map(post => post.location.city))).sort()
   const nearbyPostsCount = posts.length
 
   // Category configuration with better colors and icons
