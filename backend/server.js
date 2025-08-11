@@ -20,7 +20,7 @@ const bookingRoutes = require('./routes/bookings');
 
 // Initialize Express app
 const app = express();
-
+app.set('trust proxy', 1); // 1 = trust the first proxy in the chain
 // Connect to MongoDB
 connectDB();
 
