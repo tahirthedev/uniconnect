@@ -55,11 +55,28 @@ export default function PostsPage() {
     category: '',
   });
 
+  // Cache for posts data (3 minutes)
+  const [postsCache, setPostsCache] = useState<{
+    data: Post[];
+    timestamp: number;
+    filters: any;
+  } | null>(null);
+
   // Ref to prevent duplicate API calls
   const loadingRef = useRef(false);
   const mountedRef = useRef(true);
 
   const loadPosts = async () => {
+    // Check cache first (3 minutes)
+    const now = Date.now();
+    if (postsCache && 
+        now - postsCache.timestamp < 3 * 60 * 1000 &&
+        JSON.stringify(postsCache.filters) === JSON.stringify(filters)) {
+      setPosts(postsCache.data);
+      setLoading(false);
+      return;
+    }
+
     // Prevent duplicate calls
     if (loadingRef.current) {
       return;
@@ -94,8 +111,15 @@ export default function PostsPage() {
           
           if (mountedRef.current) {
             setPosts(uniquePosts);
+            setPostsCache({
+              data: uniquePosts,
+              timestamp: now,
+              filters: { ...filters }
+            });
             setLocationBased(false); // No location filtering for combined results
+            setLoading(false); // Clear loading state before early return
           }
+          loadingRef.current = false; // Reset loading ref
           return; // Exit early for pick-drop case
         } else {
           params.category = filters.category;
@@ -105,7 +129,13 @@ export default function PostsPage() {
       const response = await apiClient.getPosts(params);
       // Check if component is still mounted before updating state
       if (mountedRef.current) {
-        setPosts(response.posts || []);
+        const postsData = response.posts || [];
+        setPosts(postsData);
+        setPostsCache({
+          data: postsData,
+          timestamp: now,
+          filters: { ...filters }
+        });
         setLocationBased(response.location?.userLocation ? true : false);
       }
     } catch (error) {
@@ -122,7 +152,11 @@ export default function PostsPage() {
   };
 
   useEffect(() => {
-    loadPosts();
+    const debounceTimer = setTimeout(() => {
+      loadPosts();
+    }, 400);
+
+    return () => clearTimeout(debounceTimer);
   }, [filters.category, locationData.hasLocation, locationData.lat, locationData.lng, locationData.radius]);
 
   // Cleanup on unmount

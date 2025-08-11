@@ -11,16 +11,6 @@ const sendMessage = async (req, res) => {
     const { messageBody, messageType = 'text', relatedPost, attachments } = req.body;
     const senderId = req.user._id;
 
-    // Debug logging
-    console.log('Received message data:', {
-      receiverId,
-      messageBody,
-      messageType,
-      relatedPost,
-      attachments,
-      rawBody: req.body
-    });
-
     // Check if receiver exists
     const receiver = await User.findById(receiverId);
     if (!receiver) {

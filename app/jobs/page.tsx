@@ -91,8 +91,19 @@ export default function JobsPage() {
     return `${Math.floor(diffDays / 30)} months ago`;
   };
 
-  // Enhanced fetch function with smart backend integration
+  // Cache for jobs posts
+  const [jobsCache, setJobsCache] = useState<{data: Job[], timestamp: number} | null>(null)
+  const CACHE_DURATION = 3 * 60 * 1000 // 3 minutes cache
+
+  // Enhanced fetch function with caching
   const fetchJobs = useCallback(async () => {
+    // Check cache first
+    if (jobsCache && Date.now() - jobsCache.timestamp < CACHE_DURATION) {
+      setJobs(jobsCache.data)
+      setLoading(false)
+      return
+    }
+
     setLoading(true);
     try {
       // Build API parameters - for jobs, don't use location filtering as it excludes remote jobs
@@ -104,7 +115,10 @@ export default function JobsPage() {
       const response = await apiClient.getPosts(params);
       
       if (response && response.posts) {
-        setJobs(response.posts);
+        const jobs = response.posts
+        setJobs(jobs);
+        // Cache the results
+        setJobsCache({ data: jobs, timestamp: Date.now() })
         
         // Store location metadata from new backend
         if (response.location) {
@@ -122,9 +136,14 @@ export default function JobsPage() {
     }
   }, []); // No dependencies - only fetch once
 
+  // Debounced effect to prevent excessive API calls
   useEffect(() => {
-    fetchJobs();
-  }, [fetchJobs]); // Fix: Only depend on the callback
+    const debounceTimer = setTimeout(() => {
+      fetchJobs();
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(debounceTimer);
+  }, []);
 
   const handleLocationFilterChange = useCallback((data: any) => {
     // Only update radius if it has changed and is a valid number

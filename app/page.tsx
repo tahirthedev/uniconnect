@@ -23,9 +23,22 @@ export default function HomePage() {
   const [posts, setPosts] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [availableCities, setAvailableCities] = useState<string[]>([])
+  // Simple in-memory cache for API calls
+  const [postsCache, setPostsCache] = useState<Map<string, {data: any[], timestamp: number}>>(new Map())
+  const CACHE_DURATION = 2 * 60 * 1000 // 2 minutes cache
   const [nearbyPostsCount, setNearbyPostsCount] = useState(0)
   const router = useRouter()
   const locationData = useLocationData()
+
+  // Generate cache key for API calls
+  const generateCacheKey = (category: string, search: string, city: string, lat?: number, lng?: number) => {
+    return `${category}-${search}-${city}-${lat || 'no'}-${lng || 'no'}`
+  }
+
+  // Check if cache is valid
+  const isCacheValid = (timestamp: number) => {
+    return Date.now() - timestamp < CACHE_DURATION
+  }
 
   // Category configuration with better colors and icons
   const categories = [
@@ -41,8 +54,18 @@ export default function HomePage() {
     router.push(href)
   }
 
-  // Fetch posts based on location and category
+  // Fetch posts based on location and category with caching
   const fetchPosts = async (category = 'all', search = '', city = 'all') => {
+    // Generate cache key
+    const cacheKey = generateCacheKey(category, search, city, locationData.lat, locationData.lng)
+    
+    // Check cache first
+    const cached = postsCache.get(cacheKey)
+    if (cached && isCacheValid(cached.timestamp)) {
+      setPosts(cached.data)
+      return
+    }
+
     setLoading(true)
     try {
       const params: any = {}
@@ -77,21 +100,25 @@ export default function HomePage() {
           
           // If we have nearby posts, use them
           if (nearbyCount > 0) {
-            console.log('Found nearby posts:', nearbyCount)
-            setPosts(nearbyResponse.posts || [])
+            const posts = nearbyResponse.posts || []
+            setPosts(posts)
+            // Cache the results
+            setPostsCache(prev => new Map(prev.set(cacheKey, { data: posts, timestamp: Date.now() })))
             setLoading(false)
             return
           }
         } catch (error) {
-          console.log('No nearby posts found, showing all posts')
+          // Silently fall back to all posts
         }
       }
       
       // If no nearby posts or city is selected, get all posts
-      console.log('Fetching posts with params:', params)
       const response = await apiClient.getPosts(params)
-      console.log('API response:', response)
-      setPosts(response.posts || [])
+      const posts = response.posts || []
+      setPosts(posts)
+      
+      // Cache the results
+      setPostsCache(prev => new Map(prev.set(cacheKey, { data: posts, timestamp: Date.now() })))
       
     } catch (error) {
       console.error('Error fetching posts:', error)
@@ -101,10 +128,18 @@ export default function HomePage() {
     }
   }
 
-  // Fetch available cities with posts
+  // Fetch available cities with posts (cached)
+  const [citiesCache, setCitiesCache] = useState<{data: string[], timestamp: number} | null>(null)
+  
   const fetchAvailableCities = async () => {
+    // Check cache first
+    if (citiesCache && isCacheValid(citiesCache.timestamp)) {
+      setAvailableCities(citiesCache.data)
+      return
+    }
+
     try {
-      const response = await apiClient.getPosts({ limit: 100 }) // Get more posts to analyze cities
+      const response = await apiClient.getPosts({ limit: 50 }) // Reduced from 100 to 50
       const cities = new Set<string>()
       
       response.posts?.forEach((post: any) => {
@@ -115,30 +150,52 @@ export default function HomePage() {
       
       const sortedCities = Array.from(cities).sort()
       setAvailableCities(sortedCities)
+      
+      // Cache the results for 10 minutes
+      setCitiesCache({ data: sortedCities, timestamp: Date.now() })
     } catch (error) {
       console.error('Error fetching cities:', error)
     }
   }
 
   const handleCategoryChange = (categoryId: string) => {
+    // Only make changes if category is actually different
+    if (selectedCategory === categoryId) return
+    
     setSelectedCategory(categoryId)
     setSelectedCity('all') // Reset city filter when changing category
-    fetchPosts(categoryId, searchQuery, 'all')
+    // fetchPosts will be called by the debounced useEffect
   }
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    fetchPosts(selectedCategory, searchQuery, selectedCity)
+    // Remove immediate API call - let debounced useEffect handle it
+    // The search will be triggered by the debounced useEffect
   }
 
-  // Fetch posts on mount and when filters change
+  // Debounced search to prevent excessive API calls
   useEffect(() => {
-    if (locationData.hasLocation) {
-      fetchPosts(selectedCategory, searchQuery, selectedCity)
-    }
-  }, [locationData.hasLocation, locationData.lat, locationData.lng, selectedCategory, searchQuery, selectedCity])
+    const debounceTimer = setTimeout(() => {
+      if (locationData.hasLocation) {
+        fetchPosts(selectedCategory, searchQuery, selectedCity)
+      }
+    }, 300) // 300ms debounce
 
-  // Fetch available cities on mount
+    return () => clearTimeout(debounceTimer)
+  }, [locationData.hasLocation, locationData.lat, locationData.lng, selectedCategory, selectedCity])
+
+  // Separate debounce for search query (longer delay for typing)
+  useEffect(() => {
+    const searchTimer = setTimeout(() => {
+      if (searchQuery.trim() && locationData.hasLocation) {
+        fetchPosts(selectedCategory, searchQuery, selectedCity)
+      }
+    }, 800) // 800ms for search typing
+
+    return () => clearTimeout(searchTimer)
+  }, [searchQuery])
+
+  // Fetch available cities only once on mount
   useEffect(() => {
     fetchAvailableCities()
   }, [])

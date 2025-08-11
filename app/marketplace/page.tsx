@@ -22,11 +22,6 @@ export default function MarketplacePage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const handleLocationFilterChange = useCallback((data: any) => {
-    console.log('📍 Marketplace location filter change requested:', {
-      new: data,
-      timestamp: new Date().toISOString()
-    });
-    
     // Only update radius if it has changed
     if (data.radius !== locationData.radius) {
       updateRadius(data.radius);

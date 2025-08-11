@@ -97,11 +97,9 @@ export default function OfferRidePage() {
   // Handle input changes - simple function without useCallback
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    console.log('🔥 Field changed:', name, '=', value);
     
     setFormData(prevData => {
       const newData = { ...prevData, [name]: value };
-      console.log('🔥 Updated formData:', newData);
       return newData;
     });
 
@@ -117,7 +115,6 @@ export default function OfferRidePage() {
   // Handle field blur
   const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    console.log('🔥 Field blurred:', name, '=', value, 'formData[' + name + ']:', formData[name as keyof typeof formData]);
     setFieldTouched(prev => ({ ...prev, [name]: true }));
     
     const error = validateField(name, value);
@@ -127,7 +124,6 @@ export default function OfferRidePage() {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('🔥 Form submitted! Current formData:', formData);
     
     setFormError(null);
     setLoading(true);
@@ -213,18 +209,13 @@ export default function OfferRidePage() {
         };
       }
 
-      console.log('🔥 Sending post data:', postData);
-      console.log('🔥 POST DATA CATEGORY:', postData.category);
-      console.log('🔥 POST DATA TITLE:', postData.title);
-      console.log('🔥 POST DATA DESCRIPTION:', postData.description);
-      console.log('🔥 POST DATA LOCATION:', postData.location);
       await apiClient.createPost(postData);
 
       alert('Ride offer created successfully!');
       window.location.href = '/ridesharing';
       
     } catch (error: any) {
-      console.error('🔥 Error posting ride:', error);
+      console.error('Error posting ride:', error);
       setFormError('Failed to create ride offer. Please try again.');
     } finally {
       setLoading(false);

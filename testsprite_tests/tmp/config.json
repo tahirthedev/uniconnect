@@ -8,10 +8,10 @@
     "projectName": "uniconnect-mvp",
     "projectPath": "f:\\uniconnect-mvp",
     "testIds": [],
-    "additionalInstruction": "Focus specifically on testing the NEW user dashboard feature including: 1) User authentication and dashboard access at /dashboard route, 2) My Posts API endpoints (/api/posts/my-posts, /api/posts/my-stats), 3) Post CRUD operations (edit/delete) through the dashboard, 4) Location-based post filtering and city tabs functionality, 5) Integration between frontend dashboard components and backend APIs, 6) Error handling and validation for post management operations. Ensure seamless integration between the dashboard UI and backend services.",
+    "additionalInstruction": "Focus on testing CORS issues and rate limiting problems when navigating between post categories. Specifically test the navigation API calls that are causing \"Access to fetch at 'http://localhost:5000/api/posts' from origin 'http://localhost:3000' has been blocked by CORS policy\" errors. Check rate limiting configuration (currently 100 requests per 15 minutes) that may be causing backend communication failures.",
     "envs": {
-      "API_KEY": "sk-user-TBtB4owgmBOvj3Dlmc1T_6ZPMHcnCbdzRr8t1ztM3n-gzMX8XtwHUu7xkalCzln_JWlMxOlO8ORg4P30IzMC5mMAbBHppXKUHSoSf3hgGYbdHXFe-XYuLwtqvoknrDWV3zo"
+      "API_KEY": "sk-user-OBFzTw9iqosCC96pv124CtPrBAG_OvrxVqAdNIWFwDGX8Z2dJF3D3CX8Tdqknw0wbdog0fRpfkjg1uB8YfOwJWz8bmjOsA5XnulFdUPtVj2KwrzLA9PGQq9yT0eZZTRZ2PU"
     }
   },
-  "proxy": "http://54aa997e-56cf-4c49-87fb-70f5afe19627:VHGlLqbD6kRTlg8Ux6jDscVRVKzzB1Ks@tun.testsprite.com:8080"
+  "proxy": "http://151456b4-f587-456d-bebd-ddd00a0d858a:xfjxVmUAUqwY43Y30M6ETuM4vtfHALvt@tun.testsprite.com:8080"
 }

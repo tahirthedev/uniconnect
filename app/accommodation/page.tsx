@@ -48,8 +48,18 @@ export default function AccommodationPage() {
     location: 'all'
   });
 
-  // Enhanced fetch function with smart backend integration
+  // Simple cache for accommodation posts
+  const [postsCache, setPostsCache] = useState<{data: any[], timestamp: number} | null>(null)
+  const CACHE_DURATION = 3 * 60 * 1000 // 3 minutes cache for accommodation
+
+  // Enhanced fetch function with caching and debouncing
   const fetchAccommodationPosts = useCallback(async () => {
+    // Check cache first
+    if (postsCache && Date.now() - postsCache.timestamp < CACHE_DURATION) {
+      setPosts(postsCache.data)
+      return
+    }
+
     setLoading(true);
     try {
       // Build API parameters - let backend handle smart location logic
@@ -76,7 +86,10 @@ export default function AccommodationPage() {
       const response = await apiClient.getPosts(params);
       
       if (response && response.posts) {
-        setPosts(response.posts);
+        const posts = response.posts
+        setPosts(posts);
+        // Cache the results
+        setPostsCache({ data: posts, timestamp: Date.now() })
         
         // Store location metadata from new backend
         if (response.location) {
@@ -104,9 +117,14 @@ export default function AccommodationPage() {
     }
   }, [locationData?.hasLocation, locationData?.lat, locationData?.lng, locationData?.radius, locationData?.address]);
 
+  // Debounced effect to prevent excessive API calls
   useEffect(() => {
-    fetchAccommodationPosts();
-  }, [fetchAccommodationPosts]); // Fix: Only depend on the callback
+    const debounceTimer = setTimeout(() => {
+      fetchAccommodationPosts();
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(debounceTimer);
+  }, [locationData?.hasLocation, locationData?.lat, locationData?.lng, locationData?.radius]);
 
   const handleLocationFilterChange = useCallback((data: any) => {
     // Only update radius if it has changed and is a valid number

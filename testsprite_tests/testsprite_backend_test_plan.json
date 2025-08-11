@@ -2,7 +2,7 @@
   {
     "id": "TC001",
     "title": "verify_user_registration_functionality",
-    "description": "Test the /api/auth/register endpoint to ensure new users can register successfully with valid name, email, password, and phone details."
+    "description": "Test the /api/auth/register endpoint to ensure new users can register successfully with valid name, email, password, and phone data."
   },
   {
     "id": "TC002",
@@ -32,21 +32,21 @@
   {
     "id": "TC007",
     "title": "verify_delete_user_post_with_ownership_validation",
-    "description": "Test the /api/posts/{postId} DELETE endpoint to ensure that only the post owner can delete the post, and that the post is removed from the user's dashboard and public feeds immediately."
+    "description": "Test the /api/posts/{postId} DELETE endpoint to ensure that only the post owner can delete the post and that the post is removed from all feeds and user views immediately."
   },
   {
     "id": "TC008",
-    "title": "verify_get_posts_with_location_and_category_filters",
-    "description": "Test the /api/posts GET endpoint to confirm that posts can be filtered correctly by category, city, latitude, longitude, radius, and keyword search parameters."
+    "title": "verify_get_posts_with_filters",
+    "description": "Test the /api/posts GET endpoint to validate that posts can be filtered correctly by category, city, latitude, longitude, radius, and keyword search parameters."
   },
   {
     "id": "TC009",
-    "title": "verify_create_new_post_with_valid_data",
-    "description": "Test the /api/posts POST endpoint to ensure authenticated users can create new posts with required fields including title, description, category, and UK-based location data."
+    "title": "verify_create_new_post_with_location_and_category",
+    "description": "Test the /api/posts POST endpoint to confirm that authenticated users can create new posts with required fields including title, description, category, and UK-based location data."
   },
   {
     "id": "TC010",
     "title": "verify_real_time_messaging_functionality",
-    "description": "Test the /api/messages GET and /api/messages/to/{userId} POST endpoints to verify that users can retrieve their conversations and send real-time messages to other users securely."
+    "description": "Test the /api/messages GET and /api/messages/to/{userId} POST endpoints to ensure users can retrieve their conversations and send real-time messages to other users securely."
   }
 ]

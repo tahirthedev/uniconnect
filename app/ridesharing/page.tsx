@@ -51,10 +51,21 @@ export default function RidesharingPage() {
   const [showMessagingModal, setShowMessagingModal] = useState(false);
   const [locationBased, setLocationBased] = useState(false);
 
+  // Cache for ridesharing posts
+  const [ridesCache, setRidesCache] = useState<{data: Ride[], timestamp: number} | null>(null)
+  const CACHE_DURATION = 2 * 60 * 1000 // 2 minutes cache
+
   const fetchRides = useCallback(async () => {
+    // Check cache first
+    if (ridesCache && Date.now() - ridesCache.timestamp < CACHE_DURATION) {
+      setRides(ridesCache.data)
+      setLoading(false)
+      return
+    }
+
     setLoading(true);
     try {
-      const params: any = { category: 'pick-drop' }; // Use pick-drop category
+      const params: any = { category: 'ridesharing' }; // Use ridesharing category to match database
       
       // Add location parameters if available
       if (locationData.hasLocation && locationData.lat && locationData.lng) {
@@ -85,7 +96,10 @@ export default function RidesharingPage() {
         },
         createdAt: post.createdAt
       }));
+      
       setRides(transformedRides);
+      // Cache the results
+      setRidesCache({ data: transformedRides, timestamp: Date.now() })
     } catch (error) {
       console.error('Error fetching rides:', error);
       // Set empty array if backend fails
@@ -95,9 +109,14 @@ export default function RidesharingPage() {
     }
   }, []); // ✅ No dependencies = stable function reference
 
+  // Debounced effect to prevent excessive API calls
   useEffect(() => {
-    fetchRides();
-  }, [locationData.lat, locationData.lng, locationData.radius, locationData.hasLocation, fetchRides]); // ✅ Direct dependencies like posts page
+    const debounceTimer = setTimeout(() => {
+      fetchRides();
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(debounceTimer);
+  }, [locationData.lat, locationData.lng, locationData.radius, locationData.hasLocation]);
 
   const getPriceValue = (price: number | { amount: number; type: string; currency: string }): number => {
     return typeof price === 'object' ? price.amount : price;
@@ -161,7 +180,6 @@ export default function RidesharingPage() {
         await apiClient.bookRide(rideId, bookingData);
         alert(`Booking confirmed! ${seats} seat(s) booked via backend. The driver will contact you via ${contactMethod}.`);
       } catch (error) {
-        console.warn('Backend booking failed, using local simulation:', error);
         // Simulate booking locally if backend fails
         alert(`Booking confirmed (simulated)! ${seats} seat(s) booked. The driver will contact you via ${contactMethod}.`);
       }

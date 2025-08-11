@@ -33,8 +33,6 @@ const googleAuthFailure = (req, res) => {
 const register = async (req, res) => {
   try {
     const { name, email, phone, password } = req.body;
-    
-    console.log('🔥 REGISTER ATTEMPT:', { name, email, phone: phone || 'not provided' });
 
     // Check if user already exists
     const queryConditions = [{ email: email }];
@@ -45,16 +43,8 @@ const register = async (req, res) => {
     const existingUser = await User.findOne({
       $or: queryConditions
     });
-    
-    console.log('🔥 EXISTING USER SEARCH RESULT:', existingUser ? {
-      id: existingUser._id,
-      email: existingUser.email,
-      name: existingUser.name,
-      phone: existingUser.phone
-    } : 'NO USER FOUND');
 
     if (existingUser) {
-      console.log('🔥 USER EXISTS - REJECTING REGISTRATION');
       return res.status(400).json({
         success: false,
         message: 'User already exists with this email or phone number'

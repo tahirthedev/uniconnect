@@ -2,11 +2,8 @@ const { body, param, query, validationResult } = require('express-validator');
 
 // Custom validation error handler
 const handleValidationErrors = (req, res, next) => {
-  console.log('🔥 VALIDATION MIDDLEWARE - req.body:', JSON.stringify(req.body, null, 2));
-  
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    console.log('🔥 VALIDATION ERRORS:', errors.array());
     return res.status(400).json({
       success: false,
       message: 'Validation errors',
