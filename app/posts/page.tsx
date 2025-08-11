@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { ArrowLeft, MapPin, Calendar, User, Filter } from "lucide-react";
 import Link from "next/link";
 import LocationFilter from "@/components/location-filter";
@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { ApiClient } from "@/lib/api";
 import { useLocationData, useLocation } from '@/contexts/LocationContext';
+import { usePosts, usePostsWithFilters } from '@/contexts/PostsContext';
 
 const apiClient = new ApiClient();
 
@@ -48,123 +49,16 @@ export default function PostsPage() {
   const locationData = useLocationData();
   const { updateRadius } = useLocation();
   
-  const [loading, setLoading] = useState(true);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [locationBased, setLocationBased] = useState(false);
+  // Use PostsContext with filters
   const [filters, setFilters] = useState({
     category: '',
   });
-
-  // Cache for posts data (3 minutes)
-  const [postsCache, setPostsCache] = useState<{
-    data: Post[];
-    timestamp: number;
-    filters: any;
-  } | null>(null);
-
-  // Ref to prevent duplicate API calls
-  const loadingRef = useRef(false);
-  const mountedRef = useRef(true);
-
-  const loadPosts = async () => {
-    // Check cache first (3 minutes)
-    const now = Date.now();
-    if (postsCache && 
-        now - postsCache.timestamp < 3 * 60 * 1000 &&
-        JSON.stringify(postsCache.filters) === JSON.stringify(filters)) {
-      setPosts(postsCache.data);
-      setLoading(false);
-      return;
-    }
-
-    // Prevent duplicate calls
-    if (loadingRef.current) {
-      return;
-    }
-
-    try {
-      loadingRef.current = true;
-      setLoading(true);
-      
-      const params: any = {};
-      
-      // Add category filter
-      if (filters.category) {
-        // If pick-drop is selected, we need to get both ridesharing and pick-drop posts
-        if (filters.category === 'pick-drop') {
-          // Handle pick-drop by fetching both ridesharing and pick-drop categories
-          const [ridesharingResponse, pickDropResponse] = await Promise.all([
-            apiClient.getPosts({ category: 'ridesharing' }),
-            apiClient.getPosts({ category: 'pick-drop' })
-          ]);
-          
-          // Combine and deduplicate posts
-          const combinedPosts = [
-            ...(ridesharingResponse.posts || []),
-            ...(pickDropResponse.posts || [])
-          ];
-          
-          // Remove duplicates based on _id
-          const uniquePosts = combinedPosts.filter((post, index, self) => 
-            index === self.findIndex(p => p._id === post._id)
-          );
-          
-          if (mountedRef.current) {
-            setPosts(uniquePosts);
-            setPostsCache({
-              data: uniquePosts,
-              timestamp: now,
-              filters: { ...filters }
-            });
-            setLocationBased(false); // No location filtering for combined results
-            setLoading(false); // Clear loading state before early return
-          }
-          loadingRef.current = false; // Reset loading ref
-          return; // Exit early for pick-drop case
-        } else {
-          params.category = filters.category;
-        }
-      }
-      
-      const response = await apiClient.getPosts(params);
-      // Check if component is still mounted before updating state
-      if (mountedRef.current) {
-        const postsData = response.posts || [];
-        setPosts(postsData);
-        setPostsCache({
-          data: postsData,
-          timestamp: now,
-          filters: { ...filters }
-        });
-        setLocationBased(response.location?.userLocation ? true : false);
-      }
-    } catch (error) {
-      console.error('Error loading posts:', error);
-      if (mountedRef.current) {
-        setPosts([]);
-      }
-    } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-      }
-      loadingRef.current = false;
-    }
-  };
-
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      loadPosts();
-    }, 400);
-
-    return () => clearTimeout(debounceTimer);
-  }, [filters.category, locationData.hasLocation, locationData.lat, locationData.lng, locationData.radius]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+  
+  const { posts, loading, error } = usePostsWithFilters({
+    category: filters.category || undefined
+  });
+  
+  const [locationBased, setLocationBased] = useState(false);
 
   const handleFilterChange = useCallback((key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -297,13 +191,13 @@ export default function PostsPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src="" alt={post.authorInfo?.name || post.author?.name || 'User'} />
+                          <AvatarImage src="" alt={post.author?.name || 'User'} />
                           <AvatarFallback className="bg-orange-100 text-orange-600 text-sm">
-                            {(post.authorInfo?.name || post.author?.name || 'U').charAt(0).toUpperCase()}
+                            {(post.author?.name || 'U').charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm font-medium">{post.authorInfo?.name || post.author?.name || 'Anonymous'}</p>
+                          <p className="text-sm font-medium">{post.author?.name || 'Anonymous'}</p>
                           <div className="flex items-center text-xs text-gray-500">
                             <Calendar className="h-3 w-3 mr-1" />
                             {new Date(post.createdAt).toLocaleDateString()}
@@ -356,7 +250,7 @@ export default function PostsPage() {
                     <div className="mt-4 pt-3 border-t border-gray-100">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500">
-                          by {post.author?.name || post.authorInfo?.name || 'Anonymous'}
+                          by {post.author?.name || 'Anonymous'}
                         </span>
                         <span className="text-xs text-gray-400">
                           {new Date(post.createdAt).toLocaleDateString()}

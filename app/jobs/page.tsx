@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, MapPin, Clock, Briefcase, Building, Users, BookOpen, Search, MessageCircle } from "lucide-react";
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import LocationFilter from "@/components/location-filter";
 import MessagingModal from '@/components/messaging-modal';
 import { useLocationData, useLocation } from '@/contexts/LocationContext';
+import { usePostsByCategory, usePosts } from '@/contexts/PostsContext';
 import { apiClient } from '@/lib/api';
 
 interface Job {
@@ -27,9 +28,12 @@ interface Job {
   };
   location?: {
     city: string;
-    state: string;
+    state?: string;
     country: string;
-    type?: string;
+    coordinates?: {
+      latitude: number;
+      longitude: number;
+    };
   };
   details?: {
     job?: {
@@ -49,17 +53,24 @@ interface Job {
       contactEmail: string;
     };
   };
-  author?: {
+  author: {
     _id: string;
     name: string;
-    email: string;
+    avatar?: string;
   };
+  contact?: {
+    phone?: string;
+    email?: string;
+    preferredMethod: string;
+  };
+  status: string;
   createdAt: string;
-  distance?: {
-    km: number;
-    calculated: boolean;
-    note?: string;
-  };
+  updatedAt: string;
+  views?: number;
+  likeCount?: number;
+  isLiked?: boolean;
+  distance?: number;
+  distanceKm?: number;
 }
 
 export default function JobsPage() {
@@ -68,14 +79,38 @@ export default function JobsPage() {
   const { updateRadius } = useLocation();
   const router = useRouter();
   
+  // Use PostsContext for jobs posts
+  const { posts: jobsPosts, loading, error } = usePostsByCategory('jobs');
+  const { updatePost } = usePosts();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showMessagingModal, setShowMessagingModal] = useState(false);
   const [locationInfo, setLocationInfo] = useState<any>(null);
+
+  // Transform posts into jobs format
+  const jobs = useMemo(() => {
+    return jobsPosts.map(post => ({
+      _id: post._id,
+      title: post.title,
+      description: post.description,
+      price: post.price,
+      location: post.location,
+      details: post.details,
+      author: post.author,
+      contact: post.contact,
+      status: post.status,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      views: post.views,
+      likeCount: post.likeCount,
+      isLiked: post.isLiked,
+      distance: post.distance,
+      distanceKm: post.distanceKm
+    }));
+  }, [jobsPosts]);
 
   // Helper function to format date
   const formatDate = (dateString: string) => {
@@ -90,60 +125,6 @@ export default function JobsPage() {
     if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
     return `${Math.floor(diffDays / 30)} months ago`;
   };
-
-  // Cache for jobs posts
-  const [jobsCache, setJobsCache] = useState<{data: Job[], timestamp: number} | null>(null)
-  const CACHE_DURATION = 3 * 60 * 1000 // 3 minutes cache
-
-  // Enhanced fetch function with caching
-  const fetchJobs = useCallback(async () => {
-    // Check cache first
-    if (jobsCache && Date.now() - jobsCache.timestamp < CACHE_DURATION) {
-      setJobs(jobsCache.data)
-      setLoading(false)
-      return
-    }
-
-    setLoading(true);
-    try {
-      // Build API parameters - for jobs, don't use location filtering as it excludes remote jobs
-      const params: any = { category: 'jobs' };
-      
-      // For jobs, we'll handle location filtering on the frontend instead of backend
-      // This ensures remote jobs are always included
-      
-      const response = await apiClient.getPosts(params);
-      
-      if (response && response.posts) {
-        const jobs = response.posts
-        setJobs(jobs);
-        // Cache the results
-        setJobsCache({ data: jobs, timestamp: Date.now() })
-        
-        // Store location metadata from new backend
-        if (response.location) {
-          setLocationInfo(response.location);
-        }
-      } else {
-        setJobs([]);
-        setLocationInfo(null);
-      }
-    } catch (error) {
-      setJobs([]);
-      setLocationInfo(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []); // No dependencies - only fetch once
-
-  // Debounced effect to prevent excessive API calls
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      fetchJobs();
-    }, 300); // 300ms debounce
-
-    return () => clearTimeout(debounceTimer);
-  }, []);
 
   const handleLocationFilterChange = useCallback((data: any) => {
     // Only update radius if it has changed and is a valid number
@@ -294,7 +275,7 @@ export default function JobsPage() {
                           <div className="flex items-center gap-3 mb-3">
                             <Badge className={getTypeColor(job.details?.job?.type || 'full-time')}>
                               {job.details?.job?.type ? 
-                                job.details.job.type.split('-').map(word => 
+                                job.details.job.type.split('-').map((word: string) => 
                                   word.charAt(0).toUpperCase() + word.slice(1)
                                 ).join('-') : 
                                 'Full-time'
@@ -303,7 +284,7 @@ export default function JobsPage() {
                             {job.price && (
                               <span className="text-lg font-bold text-orange-600">
                                 {job.price.currency === 'GBP' ? '£' : job.price.currency === 'USD' ? '$' : '€'}
-                                {job.price.range ? `${job.price.range.min}-${job.price.range.max}` : job.price.amount}
+                                {job.price.amount}
                                 {job.price.type === 'hourly' ? '/hr' : job.price.type === 'monthly' ? '/month' : '/year'}
                               </span>
                             )}

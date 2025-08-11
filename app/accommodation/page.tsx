@@ -28,6 +28,7 @@ import { apiClient } from '@/lib/api';
 import LocationFilter from '@/components/location-filter';
 import MessagingModal from '@/components/messaging-modal';
 import { useLocationData, useLocation } from '@/contexts/LocationContext';
+import { usePostsByCategory, usePosts } from '@/contexts/PostsContext';
 
 export default function AccommodationPage() {
   // Global location state
@@ -35,8 +36,10 @@ export default function AccommodationPage() {
   const { updateRadius } = useLocation();
   const router = useRouter();
   
-  const [posts, setPosts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Use PostsContext for accommodation posts
+  const { posts: accommodationPosts, loading, error } = usePostsByCategory('accommodation');
+  const { updatePost } = usePosts();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [locationInfo, setLocationInfo] = useState<any>(null);
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -48,83 +51,27 @@ export default function AccommodationPage() {
     location: 'all'
   });
 
-  // Simple cache for accommodation posts
-  const [postsCache, setPostsCache] = useState<{data: any[], timestamp: number} | null>(null)
-  const CACHE_DURATION = 3 * 60 * 1000 // 3 minutes cache for accommodation
-
-  // Enhanced fetch function with caching and debouncing
-  const fetchAccommodationPosts = useCallback(async () => {
-    // Check cache first
-    if (postsCache && Date.now() - postsCache.timestamp < CACHE_DURATION) {
-      setPosts(postsCache.data)
-      return
-    }
-
-    setLoading(true);
-    try {
-      // Build API parameters - let backend handle smart location logic
-      const params: any = { category: 'accommodation' };
-      
-      // Add location if available (backend will use it intelligently)
-      if (locationData?.hasLocation) {
-        if (locationData.lat && locationData.lng) {
-          params.lat = locationData.lat;
-          params.lng = locationData.lng;
-          params.radius = locationData.radius || 20;
-        }
-        
-        // Also send city if available from location context
-        if (locationData.address) {
-          // Extract city from address (first part before comma)
-          const cityFromAddress = locationData.address.split(',')[0].trim();
-          if (cityFromAddress) {
-            params.city = cityFromAddress;
-          }
-        }
-      }
-      
-      const response = await apiClient.getPosts(params);
-      
-      if (response && response.posts) {
-        const posts = response.posts
-        setPosts(posts);
-        // Cache the results
-        setPostsCache({ data: posts, timestamp: Date.now() })
-        
-        // Store location metadata from new backend
-        if (response.location) {
-          setLocationInfo(response.location);
-        }
-        
-        // Store suggestions if no posts found
-        if (response.suggestions) {
-          setSuggestions(response.suggestions);
-        } else {
-          setSuggestions([]);
-        }
-      } else {
-        setPosts([]);
-        setLocationInfo(null);
-        setSuggestions([]);
-      }
-    } catch (error) {
-      console.error('Error fetching accommodation posts:', error);
-      setPosts([]);
-      setLocationInfo(null);
-      setSuggestions([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [locationData?.hasLocation, locationData?.lat, locationData?.lng, locationData?.radius, locationData?.address]);
-
-  // Debounced effect to prevent excessive API calls
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      fetchAccommodationPosts();
-    }, 500); // 500ms debounce
-
-    return () => clearTimeout(debounceTimer);
-  }, [locationData?.hasLocation, locationData?.lat, locationData?.lng, locationData?.radius]);
+  // Transform posts into accommodation format
+  const posts = useMemo(() => {
+    return accommodationPosts.map(post => ({
+      _id: post._id,
+      title: post.title,
+      description: post.description,
+      price: post.price,
+      location: post.location,
+      details: post.details,
+      author: post.author,
+      contact: post.contact,
+      status: post.status,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      views: post.views,
+      likeCount: post.likeCount,
+      isLiked: post.isLiked,
+      distance: post.distance,
+      distanceKm: post.distanceKm
+    }));
+  }, [accommodationPosts]);
 
   const handleLocationFilterChange = useCallback((data: any) => {
     // Only update radius if it has changed and is a valid number

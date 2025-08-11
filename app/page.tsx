@@ -12,7 +12,7 @@ import LightRays from "@/components/LightRays"
 import BackToTop from "@/components/back-to-top"
 import { useRouter } from 'next/navigation'
 import { useLocationData } from '@/contexts/LocationContext'
-import { apiClient } from '@/lib/api'
+import { usePostsWithFilters } from '@/contexts/PostsContext'
 
 export default function HomePage() {
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null)
@@ -20,25 +20,19 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedCity, setSelectedCity] = useState('all')
-  const [posts, setPosts] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  const [availableCities, setAvailableCities] = useState<string[]>([])
-  // Simple in-memory cache for API calls
-  const [postsCache, setPostsCache] = useState<Map<string, {data: any[], timestamp: number}>>(new Map())
-  const CACHE_DURATION = 2 * 60 * 1000 // 2 minutes cache
-  const [nearbyPostsCount, setNearbyPostsCount] = useState(0)
   const router = useRouter()
   const locationData = useLocationData()
 
-  // Generate cache key for API calls
-  const generateCacheKey = (category: string, search: string, city: string, lat?: number, lng?: number) => {
-    return `${category}-${search}-${city}-${lat || 'no'}-${lng || 'no'}`
-  }
+  // Use the new Posts context with filters
+  const { posts, loading, error } = usePostsWithFilters({
+    category: selectedCategory === 'all' ? undefined : selectedCategory,
+    search: searchQuery.trim() || undefined,
+    city: selectedCity === 'all' ? undefined : selectedCity
+  })
 
-  // Check if cache is valid
-  const isCacheValid = (timestamp: number) => {
-    return Date.now() - timestamp < CACHE_DURATION
-  }
+  // Get available cities from posts
+  const availableCities = Array.from(new Set(posts.map(post => post.location.city))).sort()
+  const nearbyPostsCount = posts.length
 
   // Category configuration with better colors and icons
   const categories = [
@@ -54,151 +48,22 @@ export default function HomePage() {
     router.push(href)
   }
 
-  // Fetch posts based on location and category with caching
-  const fetchPosts = async (category = 'all', search = '', city = 'all') => {
-    // Generate cache key
-    const cacheKey = generateCacheKey(category, search, city, locationData.lat, locationData.lng)
-    
-    // Check cache first
-    const cached = postsCache.get(cacheKey)
-    if (cached && isCacheValid(cached.timestamp)) {
-      setPosts(cached.data)
-      return
-    }
-
-    setLoading(true)
-    try {
-      const params: any = {}
-      
-      if (category !== 'all') {
-        params.category = category
-      }
-      
-      if (city !== 'all') {
-        params.city = city
-      }
-      
-      // Add search parameter
-      if (search && search.trim()) {
-        params.search = search.trim()
-      }
-      
-      // Check for nearby posts first (within 25km)
-      let nearbyCount = 0
-      if (locationData.hasLocation && locationData.lat && locationData.lng && city === 'all') {
-        const nearbyParams = {
-          ...params,
-          lat: locationData.lat,
-          lng: locationData.lng,
-          radius: 25
-        }
-        
-        try {
-          const nearbyResponse = await apiClient.getPosts(nearbyParams)
-          nearbyCount = nearbyResponse.posts?.length || 0
-          setNearbyPostsCount(nearbyCount)
-          
-          // If we have nearby posts, use them
-          if (nearbyCount > 0) {
-            const posts = nearbyResponse.posts || []
-            setPosts(posts)
-            // Cache the results
-            setPostsCache(prev => new Map(prev.set(cacheKey, { data: posts, timestamp: Date.now() })))
-            setLoading(false)
-            return
-          }
-        } catch (error) {
-          // Silently fall back to all posts
-        }
-      }
-      
-      // If no nearby posts or city is selected, get all posts
-      const response = await apiClient.getPosts(params)
-      const posts = response.posts || []
-      setPosts(posts)
-      
-      // Cache the results
-      setPostsCache(prev => new Map(prev.set(cacheKey, { data: posts, timestamp: Date.now() })))
-      
-    } catch (error) {
-      console.error('Error fetching posts:', error)
-      setPosts([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Fetch available cities with posts (cached)
-  const [citiesCache, setCitiesCache] = useState<{data: string[], timestamp: number} | null>(null)
-  
-  const fetchAvailableCities = async () => {
-    // Check cache first
-    if (citiesCache && isCacheValid(citiesCache.timestamp)) {
-      setAvailableCities(citiesCache.data)
-      return
-    }
-
-    try {
-      const response = await apiClient.getPosts({ limit: 50 }) // Reduced from 100 to 50
-      const cities = new Set<string>()
-      
-      response.posts?.forEach((post: any) => {
-        if (post.location?.city) {
-          cities.add(post.location.city)
-        }
-      })
-      
-      const sortedCities = Array.from(cities).sort()
-      setAvailableCities(sortedCities)
-      
-      // Cache the results for 10 minutes
-      setCitiesCache({ data: sortedCities, timestamp: Date.now() })
-    } catch (error) {
-      console.error('Error fetching cities:', error)
-    }
-  }
-
   const handleCategoryChange = (categoryId: string) => {
     // Only make changes if category is actually different
     if (selectedCategory === categoryId) return
     
     setSelectedCategory(categoryId)
     setSelectedCity('all') // Reset city filter when changing category
-    // fetchPosts will be called by the debounced useEffect
   }
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    // Remove immediate API call - let debounced useEffect handle it
-    // The search will be triggered by the debounced useEffect
+    // Search is handled automatically by the PostsContext filtering
   }
 
-  // Debounced search to prevent excessive API calls
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      if (locationData.hasLocation) {
-        fetchPosts(selectedCategory, searchQuery, selectedCity)
-      }
-    }, 300) // 300ms debounce
+  // No more useEffect for fetching - PostsContext handles everything automatically
 
-    return () => clearTimeout(debounceTimer)
-  }, [locationData.hasLocation, locationData.lat, locationData.lng, selectedCategory, selectedCity])
-
-  // Separate debounce for search query (longer delay for typing)
-  useEffect(() => {
-    const searchTimer = setTimeout(() => {
-      if (searchQuery.trim() && locationData.hasLocation) {
-        fetchPosts(selectedCategory, searchQuery, selectedCity)
-      }
-    }, 800) // 800ms for search typing
-
-    return () => clearTimeout(searchTimer)
-  }, [searchQuery])
-
-  // Fetch available cities only once on mount
-  useEffect(() => {
-    fetchAvailableCities()
-  }, [])
+  // No more useEffect for fetching - PostsContext handles everything automatically
 
   const testimonials = [
     {

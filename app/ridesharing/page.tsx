@@ -15,6 +15,7 @@ import {
   MessageCircle, 
   Plus
 } from 'lucide-react';
+import { usePostsByCategory, usePosts } from '@/contexts/PostsContext';
 import { ApiClient } from '@/lib/api';
 import BookingModal from '@/components/booking-modal';
 import MessagingModal from '@/components/messaging-modal';
@@ -44,79 +45,34 @@ export default function RidesharingPage() {
   // Global location state
   const locationData = useLocationData();
   
-  const [rides, setRides] = useState<Ride[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Use PostsContext for ridesharing posts
+  const { posts: ridesharingPosts, loading, error } = usePostsByCategory('ridesharing');
+  const { updatePost } = usePosts();
+  
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showMessagingModal, setShowMessagingModal] = useState(false);
-  const [locationBased, setLocationBased] = useState(false);
 
-  // Cache for ridesharing posts
-  const [ridesCache, setRidesCache] = useState<{data: Ride[], timestamp: number} | null>(null)
-  const CACHE_DURATION = 2 * 60 * 1000 // 2 minutes cache
-
-  const fetchRides = useCallback(async () => {
-    // Check cache first
-    if (ridesCache && Date.now() - ridesCache.timestamp < CACHE_DURATION) {
-      setRides(ridesCache.data)
-      setLoading(false)
-      return
-    }
-
-    setLoading(true);
-    try {
-      const params: any = { category: 'ridesharing' }; // Use ridesharing category to match database
-      
-      // Add location parameters if available
-      if (locationData.hasLocation && locationData.lat && locationData.lng) {
-        params.lat = locationData.lat;
-        params.lng = locationData.lng;
-        params.radius = locationData.radius || 20;
-      }
-      
-      const response = await apiClient.getPosts(params);
-      const rideData = response.posts || [];
-      setLocationBased(response.locationBased || false);
-      
-      // Transform backend data to match our interface
-      const transformedRides = rideData.map((post: any) => ({
-        _id: post._id,
-        title: post.title,
-        description: post.description,
-        pickup: post.details?.ride?.from || post.location?.city || '',
-        destination: post.details?.ride?.to || '',
-        date: post.details?.ride?.date ? new Date(post.details.ride.date).toISOString().split('T')[0] : '',
-        time: post.details?.ride?.time || '',
-        price: post.price,
-        availableSeats: post.details?.ride?.seats || 1,
-        user: {
-          _id: post.author?._id || post.author,
-          name: post.author?.name || 'Anonymous',
-          avatar: post.author?.avatar
-        },
-        createdAt: post.createdAt
-      }));
-      
-      setRides(transformedRides);
-      // Cache the results
-      setRidesCache({ data: transformedRides, timestamp: Date.now() })
-    } catch (error) {
-      console.error('Error fetching rides:', error);
-      // Set empty array if backend fails
-      setRides([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []); // ✅ No dependencies = stable function reference
-
-  // Debounced effect to prevent excessive API calls
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      fetchRides();
-    }, 500); // 500ms debounce
-
-    return () => clearTimeout(debounceTimer);
-  }, [locationData.lat, locationData.lng, locationData.radius, locationData.hasLocation]);
+  // Transform posts into rides format
+  const rides = useMemo(() => {
+    return ridesharingPosts.map(post => ({
+      _id: post._id,
+      title: post.title,
+      description: post.description,
+      pickup: post.details?.ride?.from || post.location.city,
+      destination: post.details?.ride?.to || 'Destination',
+      date: post.details?.ride?.date || post.createdAt,
+      time: post.details?.ride?.time || '00:00',
+      price: post.price || { amount: 0, type: 'fixed', currency: 'GBP' },
+      availableSeats: post.details?.ride?.seats || 1,
+      user: {
+        _id: post.author._id,
+        name: post.author.name,
+        avatar: post.author.avatar
+      },
+      createdAt: post.createdAt
+    }));
+  }, [ridesharingPosts]);
 
   const getPriceValue = (price: number | { amount: number; type: string; currency: string }): number => {
     return typeof price === 'object' ? price.amount : price;
@@ -184,14 +140,19 @@ export default function RidesharingPage() {
         alert(`Booking confirmed (simulated)! ${seats} seat(s) booked. The driver will contact you via ${contactMethod}.`);
       }
       
-      // Update the ride's available seats locally
-      setRides(prevRides => 
-        prevRides.map(ride => 
-          ride._id === rideId 
-            ? { ...ride, availableSeats: Math.max(0, ride.availableSeats - seats) }
-            : ride
-        )
-      );
+      // Update the ride's available seats locally in the posts context
+      const ridePost = ridesharingPosts.find(post => post._id === rideId);
+      if (ridePost) {
+        updatePost(rideId, {
+          details: {
+            ...ridePost.details,
+            ride: {
+              ...ridePost.details?.ride,
+              seats: Math.max(0, (ridePost.details?.ride?.seats || 1) - seats)
+            }
+          }
+        });
+      }
       
       // You could also send a message automatically
       if (contactMethod === 'message' && selectedRide?.user) {
@@ -241,7 +202,7 @@ export default function RidesharingPage() {
               <h1 className="text-3xl font-bold text-gray-900">Pick & Drop</h1>
               <div className="flex items-center space-x-2 text-gray-600">
                 <p>Find or offer rides across UK universities</p>
-                {locationBased && (
+                {locationData.hasLocation && (
                   <>
                     <span>•</span>
                     <div className="flex items-center space-x-1">

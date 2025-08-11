@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { LocationProvider } from '@/contexts/LocationContext'
+import { PostsProvider } from '@/contexts/PostsContext'
 import Navigation from '@/components/navigation'
 
 export const metadata: Metadata = {
@@ -22,8 +23,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <LocationProvider defaultRadius={20}>
-          <Navigation />
-          {children}
+          <PostsProvider>
+            <Navigation />
+            {children}
+          </PostsProvider>
         </LocationProvider>
       </body>
     </html>

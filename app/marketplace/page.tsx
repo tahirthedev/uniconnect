@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { ArrowLeft, Search, Grid, List, Heart, Share, Star, MapPin, Clock, Eye } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -8,18 +8,44 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import LocationFilter from "@/components/location-filter";
 import { useLocationData, useLocation } from '@/contexts/LocationContext';
+import { usePostsByCategory, usePosts } from '@/contexts/PostsContext';
 
 export default function MarketplacePage() {
   // Global location state
   const locationData = useLocationData();
   const { updateRadius } = useLocation();
   
+  // Use PostsContext for marketplace posts
+  const { posts: marketplacePosts, loading, error } = usePostsByCategory('buy-sell');
+  const { updatePost } = usePosts();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [conditionFilter, setConditionFilter] = useState('');
-  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Transform posts into products format
+  const products = useMemo(() => {
+    return marketplacePosts.map(post => ({
+      id: post._id,
+      title: post.title,
+      price: post.price ? `£${post.price.amount}` : 'Contact for price',
+      originalPrice: post.details?.marketplace?.originalPrice ? `£${post.details.marketplace.originalPrice}` : undefined,
+      seller: post.author.name,
+      rating: 4.8, // Default rating
+      location: post.location.city,
+      posted: new Date(post.createdAt).toLocaleDateString(),
+      images: ["/placeholder.svg?height=300&width=400"],
+      condition: post.details?.marketplace?.condition || 'Good',
+      category: post.details?.marketplace?.category || 'General',
+      views: post.views || 0,
+      likes: post.likeCount || 0,
+      description: post.description,
+      verified: true,
+      featured: post.likeCount && post.likeCount > 10 // Featured if has many likes
+    }));
+  }, [marketplacePosts]);
 
   const handleLocationFilterChange = useCallback((data: any) => {
     // Only update radius if it has changed
@@ -32,102 +58,6 @@ export default function MarketplacePage() {
       setLocationFilter(data.location);
     }
   }, [locationData.radius, updateRadius]);
-
-  const products = [
-    {
-      id: 1,
-      title: "MacBook Pro M3 14-inch - Like New",
-      price: "£1,200",
-      originalPrice: "£1,599",
-      seller: "Mike Chen",
-      rating: 4.9,
-      location: "London",
-      posted: "2 hours ago",
-      images: ["/placeholder.svg?height=300&width=400"],
-      condition: "Like New",
-      category: "Electronics",
-      views: 45,
-      likes: 12,
-      featured: true,
-    },
-    {
-      id: 2,
-      title: "Vintage Leather Jacket - Size M",
-      price: "£65",
-      seller: "Sarah Johnson",
-      rating: 4.8,
-      location: "Manchester",
-      posted: "5 hours ago",
-      images: ["/placeholder.svg?height=300&width=400"],
-      condition: "Good",
-      category: "Fashion",
-      views: 23,
-      likes: 8,
-    },
-    {
-      id: 3,
-      title: "Study Desk with Drawers",
-      price: "£80",
-      seller: "Emma Wilson",
-      rating: 5.0,
-      location: "Birmingham",
-      posted: "1 day ago",
-      images: ["/placeholder.svg?height=300&width=400"],
-      condition: "Excellent",
-      category: "Furniture",
-      views: 67,
-      likes: 15,
-    },
-    {
-      id: 4,
-      title: "iPhone 14 Pro - 256GB Space Black",
-      price: "£750",
-      originalPrice: "£999",
-      seller: "Alex McKenzie",
-      rating: 4.9,
-      location: "Edinburgh",
-      posted: "2 days ago",
-      images: ["/placeholder.svg?height=300&width=400"],
-      condition: "Like New",
-      category: "Electronics",
-      views: 89,
-      likes: 24,
-      featured: true,
-    },
-    {
-      id: 5,
-      title: "Textbooks Bundle - Computer Science",
-      price: "£120",
-      originalPrice: "£280",
-      seller: "Tom Wilson",
-      rating: 4.7,
-      location: "Bristol",
-      posted: "3 days ago",
-      images: ["/placeholder.svg?height=300&width=400"],
-      condition: "Good",
-      category: "Books",
-      views: 34,
-      likes: 9,
-    },
-    {
-      id: 6,
-      title: "Gaming Chair - Ergonomic",
-      price: "£180",
-      seller: "Lisa Brown",
-      rating: 4.8,
-      location: "Leeds",
-      posted: "1 week ago",
-      images: ["/placeholder.svg?height=300&width=400"],
-      condition: "Excellent",
-      category: "Furniture",
-      views: 56,
-      likes: 18,
-    }
-  ];
-
-  useEffect(() => {
-    setLoading(false);
-  }, []);
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = !searchQuery || 
