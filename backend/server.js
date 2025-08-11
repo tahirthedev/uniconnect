@@ -50,11 +50,14 @@ app.use(cors({
     'http://localhost:3000',
     'http://localhost:3001', // Add port 3001 for development
     'http://127.0.0.1:3000',
-    'http://127.0.0.1:3001'
+    'http://127.0.0.1:3001',
+    'https://uniconnect-production.up.railway.app', // Production frontend
+    'https://perceptive-surprise-production.up.railway.app' // Production backend (for internal calls)
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Authorization']
 }));
 
 // Body parsing middleware
@@ -76,6 +79,9 @@ app.use(session({
 // Passport middleware
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Handle preflight requests
+app.options('*', cors());
 
 // Logging middleware
 if (process.env.NODE_ENV !== 'production') {
