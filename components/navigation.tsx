@@ -90,6 +90,14 @@ export default function Navigation() {
               </Button>
             </Link>
             
+            {isLoggedIn && (
+              <Link href="/dashboard">
+                <Button variant="ghost" className="hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 transform hover:scale-105">
+                  My Posts
+                </Button>
+              </Link>
+            )}
+            
             {isLoggedIn && userInfo ? (
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2 px-3 py-1 bg-orange-50 rounded-lg animate-pulse">
@@ -154,6 +162,12 @@ export default function Navigation() {
               <Link href="/messages" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">
                 Messages
               </Link>
+              
+              {isLoggedIn && (
+                <Link href="/dashboard" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">
+                  My Posts
+                </Link>
+              )}
               
               {isLoggedIn && userInfo ? (
                 <>

@@ -15,6 +15,18 @@ interface LightRaysProps {
   className?: string;
 }
 
+// Helper function to clamp RGB values between 0 and 255
+const clampRgb = (value: number): number => Math.max(0, Math.min(255, Math.floor(value)));
+
+// Helper function to create safe RGBA string
+const safeRgba = (r: number, g: number, b: number, a: number): string => {
+  const safeR = clampRgb(isNaN(r) ? 255 : r);
+  const safeG = clampRgb(isNaN(g) ? 112 : g);
+  const safeB = clampRgb(isNaN(b) ? 33 : b);
+  const safeA = isNaN(a) ? 0.5 : Math.max(0, Math.min(1, a));
+  return `rgba(${safeR}, ${safeG}, ${safeB}, ${safeA})`;
+};
+
 const LightRays: React.FC<LightRaysProps> = ({
   raysOrigin = 'top-center',
   raysColor = '#FB9230',
@@ -111,9 +123,9 @@ const LightRays: React.FC<LightRaysProps> = ({
         // Create focused beam toward text
         const focusStrength = Math.exp(-normalizedAngleDiff * 2);
         
-        // Animate ray intensity
+        // Animate ray intensity with NaN safety
         const rayIntensity = (Math.sin(angle * 3 + timeRef.current * raysSpeed) * 0.5 + 0.5) * lightSpread;
-        const finalIntensity = rayIntensity * (1 + focusStrength * 2);
+        const finalIntensity = Math.max(0, isNaN(rayIntensity) ? 0.5 : rayIntensity * (1 + focusStrength * 2));
         
         if (finalIntensity > 0.1) {
           // Calculate ray end point
@@ -130,13 +142,13 @@ const LightRays: React.FC<LightRaysProps> = ({
           );
           const spotlightStrength = Math.max(0, 1 - spotlightDistance / (width * 0.4));
           
-          const startAlpha = finalIntensity * 0.8;
-          const endAlpha = finalIntensity * 0.1 * (1 + spotlightStrength);
+          const startAlpha = Math.max(0, Math.min(1, finalIntensity * 0.8));
+          const endAlpha = Math.max(0, Math.min(1, finalIntensity * 0.1 * (1 + spotlightStrength)));
           
-          // Warm orange gradient
-          gradient.addColorStop(0, `rgba(${color.r}, ${Math.floor(color.g * 0.7)}, ${Math.floor(color.b * 0.4)}, ${startAlpha})`);
-          gradient.addColorStop(0.3, `rgba(${color.r}, ${color.g}, ${color.b}, ${finalIntensity * 0.6})`);
-          gradient.addColorStop(1, `rgba(${Math.floor(color.r * 1.2)}, ${Math.floor(color.g * 0.8)}, ${Math.floor(color.b * 0.5)}, ${endAlpha})`);
+          // Warm orange gradient with safe color values
+          gradient.addColorStop(0, safeRgba(color.r, color.g * 0.7, color.b * 0.4, startAlpha));
+          gradient.addColorStop(0.3, safeRgba(color.r, color.g, color.b, finalIntensity * 0.6));
+          gradient.addColorStop(1, safeRgba(color.r * 1.2, color.g * 0.8, color.b * 0.5, endAlpha));
 
           // Draw ray
           ctx.strokeStyle = gradient;

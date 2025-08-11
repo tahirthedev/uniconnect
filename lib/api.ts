@@ -183,6 +183,36 @@ export class ApiClient {
       body: JSON.stringify(data),
     });
   }
+
+  // Dashboard endpoints
+  async getCurrentUser() {
+    return this.request('/api/auth/me');
+  }
+
+  async getMyPosts() {
+    return this.request('/api/posts/my-posts');
+  }
+
+  async getMyStats() {
+    return this.request('/api/posts/my-stats');
+  }
+
+  async deletePost(postId: string) {
+    return this.request(`/api/posts/${postId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getPostById(postId: string) {
+    return this.request(`/api/posts/${postId}`);
+  }
+
+  async updatePost(postId: string, postData: any) {
+    return this.request(`/api/posts/${postId}`, {
+      method: 'PUT',
+      body: JSON.stringify(postData),
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

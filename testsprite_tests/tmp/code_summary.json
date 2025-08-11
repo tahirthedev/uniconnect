@@ -1,0 +1,460 @@
+{
+  "tech_stack": [
+    "TypeScript",
+    "JavaScript", 
+    "Next.js 15.2.4",
+    "React 18",
+    "Node.js",
+    "Express.js",
+    "MongoDB",
+    "Mongoose ODM",
+    "JWT Authentication",
+    "Passport.js",
+    "Google OAuth",
+    "Tailwind CSS",
+    "Radix UI",
+    "Lucide React Icons",
+    "GSAP Animation",
+    "Helmet Security",
+    "CORS",
+    "Rate Limiting",
+    "Express Validator",
+    "Bcrypt.js",
+    "Morgan Logging"
+  ],
+  "features": [
+    {
+      "name": "User Authentication System",
+      "description": "Complete authentication with Google OAuth, JWT tokens, local registration/login, password hashing, and session management",
+      "files": [
+        "backend/controllers/authController.js",
+        "backend/routes/auth.js", 
+        "backend/middleware/auth.js",
+        "backend/config/passport.js",
+        "lib/auth.ts"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/api/auth/register": {
+            "post": {
+              "summary": "Register new user",
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "name": {"type": "string"},
+                        "email": {"type": "string"},
+                        "password": {"type": "string"},
+                        "phone": {"type": "string"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/auth/login": {
+            "post": {
+              "summary": "Login user",
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object", 
+                      "properties": {
+                        "emailOrPhone": {"type": "string"},
+                        "password": {"type": "string"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/auth/me": {
+            "get": {
+              "summary": "Get current user profile",
+              "security": [{"bearerAuth": []}]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "User Dashboard & Post Management",
+      "description": "NEW FEATURE: Complete user dashboard allowing users to view, edit, and delete their posts with statistics tracking",
+      "files": [
+        "app/dashboard/page.tsx",
+        "app/posts/edit/[id]/page.tsx",
+        "backend/controllers/postController.js",
+        "backend/routes/posts.js",
+        "lib/api.ts"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/api/posts/my-posts": {
+            "get": {
+              "summary": "Get current user's posts",
+              "security": [{"bearerAuth": []}],
+              "responses": {
+                "200": {
+                  "description": "User posts retrieved successfully",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "success": {"type": "boolean"},
+                          "posts": {
+                            "type": "array",
+                            "items": {"$ref": "#/components/schemas/Post"}
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/posts/my-stats": {
+            "get": {
+              "summary": "Get current user's post statistics",
+              "security": [{"bearerAuth": []}],
+              "responses": {
+                "200": {
+                  "description": "User statistics retrieved successfully",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "success": {"type": "boolean"},
+                          "stats": {
+                            "type": "object",
+                            "properties": {
+                              "totalPosts": {"type": "number"},
+                              "activePosts": {"type": "number"},
+                              "totalViews": {"type": "number"},
+                              "totalLikes": {"type": "number"}
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/posts/{postId}": {
+            "put": {
+              "summary": "Update user's post",
+              "security": [{"bearerAuth": []}],
+              "parameters": [
+                {
+                  "name": "postId",
+                  "in": "path",
+                  "required": true,
+                  "schema": {"type": "string"}
+                }
+              ],
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {"$ref": "#/components/schemas/PostUpdate"}
+                  }
+                }
+              }
+            },
+            "delete": {
+              "summary": "Delete user's post",
+              "security": [{"bearerAuth": []}],
+              "parameters": [
+                {
+                  "name": "postId",
+                  "in": "path",
+                  "required": true,
+                  "schema": {"type": "string"}
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Posts System with Location-Based Search",
+      "description": "Comprehensive posting system with 6 categories, location-based filtering, city tabs, and smart search functionality",
+      "files": [
+        "backend/controllers/postController.js",
+        "backend/routes/posts.js",
+        "backend/models/Post.js",
+        "app/page.tsx",
+        "app/posts/page.tsx",
+        "backend/utils/locationUtils.js"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/api/posts": {
+            "get": {
+              "summary": "Get posts with filters",
+              "parameters": [
+                {"name": "category", "in": "query", "schema": {"type": "string"}},
+                {"name": "city", "in": "query", "schema": {"type": "string"}},
+                {"name": "lat", "in": "query", "schema": {"type": "number"}},
+                {"name": "lng", "in": "query", "schema": {"type": "number"}},
+                {"name": "radius", "in": "query", "schema": {"type": "number"}},
+                {"name": "search", "in": "query", "schema": {"type": "string"}}
+              ]
+            },
+            "post": {
+              "summary": "Create new post",
+              "security": [{"bearerAuth": []}],
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {"$ref": "#/components/schemas/PostCreate"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Direct Messaging System",
+      "description": "Real-time messaging between users with conversation management and message status tracking",
+      "files": [
+        "backend/controllers/messageController.js",
+        "backend/routes/messages.js",
+        "backend/models/Message.js",
+        "app/messages/page.tsx"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/api/messages": {
+            "get": {
+              "summary": "Get all user conversations",
+              "security": [{"bearerAuth": []}]
+            }
+          },
+          "/api/messages/to/{userId}": {
+            "post": {
+              "summary": "Send message to user",
+              "security": [{"bearerAuth": []}],
+              "parameters": [
+                {"name": "userId", "in": "path", "required": true, "schema": {"type": "string"}}
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Content Moderation & Reporting",
+      "description": "Automated content moderation with keyword detection and user reporting system",
+      "files": [
+        "backend/controllers/reportController.js",
+        "backend/routes/reports.js", 
+        "backend/models/Report.js",
+        "backend/utils/moderation.js"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/api/reports": {
+            "post": {
+              "summary": "Create content report",
+              "security": [{"bearerAuth": []}]
+            },
+            "get": {
+              "summary": "Get all reports (moderator/admin only)",
+              "security": [{"bearerAuth": []}]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Admin Panel & Analytics",
+      "description": "Administrative dashboard with user management, analytics, and content moderation tools",
+      "files": [
+        "backend/controllers/adminController.js",
+        "backend/routes/admin.js",
+        "backend/models/Analytics.js",
+        "app/admin/page.tsx"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/api/admin/users": {
+            "get": {
+              "summary": "Get all users (admin only)",
+              "security": [{"bearerAuth": []}]
+            }
+          },
+          "/api/admin/analytics": {
+            "get": {
+              "summary": "Get analytics dashboard data",
+              "security": [{"bearerAuth": []}]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Booking System",
+      "description": "Ride booking and accommodation booking system with status management",
+      "files": [
+        "backend/routes/bookings.js",
+        "backend/models/Booking.js",
+        "app/bookings/page.tsx"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/api/bookings/rides/{rideId}/book": {
+            "post": {
+              "summary": "Book a ride",
+              "security": [{"bearerAuth": []}]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Location Services",
+      "description": "UK-based location services with city search, coordinates, and location-based filtering",
+      "files": [
+        "components/location-selector.tsx",
+        "components/location-display.tsx",
+        "contexts/LocationContext.tsx",
+        "backend/utils/locationUtils.js",
+        "backend/utils/ukCities.js"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "Location API",
+          "description": "UK-focused location services with coordinate support"
+        }
+      }
+    }
+  ],
+  "components": {
+    "schemas": {
+      "Post": {
+        "type": "object",
+        "properties": {
+          "_id": {"type": "string"},
+          "title": {"type": "string"},
+          "description": {"type": "string"},
+          "category": {
+            "type": "string",
+            "enum": ["pick-drop", "accommodation", "jobs", "buy-sell", "currency-exchange"]
+          },
+          "author": {"type": "string"},
+          "location": {
+            "type": "object",
+            "properties": {
+              "city": {"type": "string"},
+              "state": {"type": "string"},
+              "country": {"type": "string"},
+              "coordinates": {
+                "type": "object",
+                "properties": {
+                  "latitude": {"type": "number"},
+                  "longitude": {"type": "number"}
+                }
+              }
+            }
+          },
+          "price": {
+            "type": "object",
+            "properties": {
+              "amount": {"type": "number"},
+              "currency": {"type": "string"}
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "inactive", "flagged", "expired"]
+          },
+          "views": {"type": "number"},
+          "likes": {"type": "array", "items": {"type": "string"}},
+          "createdAt": {"type": "string", "format": "date-time"},
+          "expiresAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "PostCreate": {
+        "type": "object",
+        "required": ["title", "description", "category", "location"],
+        "properties": {
+          "title": {"type": "string"},
+          "description": {"type": "string"},
+          "category": {"type": "string"},
+          "location": {"$ref": "#/components/schemas/Location"},
+          "price": {"$ref": "#/components/schemas/Price"},
+          "contact": {"$ref": "#/components/schemas/Contact"}
+        }
+      },
+      "PostUpdate": {
+        "type": "object",
+        "properties": {
+          "title": {"type": "string"},
+          "description": {"type": "string"},
+          "category": {"type": "string"},
+          "location": {"$ref": "#/components/schemas/Location"},
+          "price": {"$ref": "#/components/schemas/Price"},
+          "contact": {"$ref": "#/components/schemas/Contact"}
+        }
+      },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "city": {"type": "string"},
+          "state": {"type": "string"},
+          "country": {"type": "string", "default": "UK"},
+          "coordinates": {
+            "type": "object",
+            "properties": {
+              "latitude": {"type": "number"},
+              "longitude": {"type": "number"}
+            }
+          }
+        }
+      },
+      "Price": {
+        "type": "object",
+        "properties": {
+          "amount": {"type": "number"},
+          "currency": {"type": "string", "default": "GBP"}
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "phone": {"type": "string"},
+          "email": {"type": "string"},
+          "whatsapp": {"type": "string"},
+          "preferredMethod": {"type": "string"}
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
