@@ -2,8 +2,21 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { ApiClient } from '@/lib/api';
+import { useLocationData } from './LocationContext';
 
 const apiClient = new ApiClient();
+
+// Utility function to calculate distance between two GPS coordinates (client-side only)
+const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) + 
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+            Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+};
 
 interface Post {
   _id: string;
@@ -83,6 +96,9 @@ export function PostsProvider({ children }: PostsProviderProps) {
   const [loading, setLoading] = useState(true);
   const [lastFetch, setLastFetch] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Get location data for GPS-based filtering
+  const locationData = useLocationData();
 
   // Fetch all posts from API
   const refreshPosts = async () => {
@@ -116,30 +132,104 @@ export function PostsProvider({ children }: PostsProviderProps) {
     refreshPosts();
   }, []);
 
-  // Filter posts by category
+  // Filter posts by category with location-based prioritization
   const getPostsByCategory = (category: string): Post[] => {
     if (!category) return allPosts;
     
+    let categoryPosts;
+    
     // Handle special cases
     if (category === 'pick-drop') {
-      return allPosts.filter(post => 
+      categoryPosts = allPosts.filter(post => 
         post.category === 'ridesharing' || post.category === 'pick-drop'
+      );
+    } else {
+      categoryPosts = allPosts.filter(post => post.category === category);
+    }
+    
+    // Apply GPS-based filtering and sorting if user has location
+    if (locationData.lat && locationData.lng) {
+      const userLat = locationData.lat;
+      const userLng = locationData.lng;
+      const radius = locationData.radius || 50;
+      
+      const postsWithDistance = categoryPosts
+        .map(post => {
+          if (post.location.coordinates && 
+              post.location.coordinates.latitude && 
+              post.location.coordinates.longitude) {
+            const distance = calculateDistance(
+              userLat, userLng,
+              post.location.coordinates.latitude,
+              post.location.coordinates.longitude
+            );
+            return { ...post, distance, distanceKm: distance };
+          }
+          // Don't include posts without valid coordinates in GPS filtering
+          return null;
+        })
+        .filter((post): post is Post & { distance: number; distanceKm: number } => post !== null) // Remove posts without coordinates
+        .filter(post => {
+          // Only include posts within radius
+          return post.distance <= radius;
+        })
+        .sort((a, b) => a.distance - b.distance);
+      
+      // If we have nearby posts, return them; otherwise return all category posts
+      return postsWithDistance.length > 0 ? postsWithDistance : categoryPosts;
+    }
+    
+    return categoryPosts;
+  };
+
+  // Filter posts by location - GPS-based with fallback to city name
+  const getPostsByLocation = (city?: string, radius: number = 50): Post[] => {
+    // If user has GPS coordinates, prioritize proximity-based filtering
+    if (locationData.lat && locationData.lng) {
+      const userLat = locationData.lat;
+      const userLng = locationData.lng;
+      
+      // Calculate distances and filter by radius
+      const postsWithDistance = allPosts
+        .map(post => {
+          if (post.location.coordinates && 
+              post.location.coordinates.latitude && 
+              post.location.coordinates.longitude) {
+            const distance = calculateDistance(
+              userLat, userLng,
+              post.location.coordinates.latitude,
+              post.location.coordinates.longitude
+            );
+            return { ...post, distance, distanceKm: distance };
+          }
+          // Don't include posts without valid coordinates in GPS filtering
+          return null;
+        })
+        .filter((post): post is Post & { distance: number; distanceKm: number } => post !== null) // Remove posts without coordinates
+        .filter(post => {
+          // Only include posts within radius
+          return post.distance <= radius;
+        })
+        .sort((a, b) => a.distance - b.distance); // Sort by distance
+      
+      // If we have nearby posts, return them
+      if (postsWithDistance.length > 0) {
+        return postsWithDistance;
+      }
+    }
+    
+    // Fallback: city name filtering (for when no GPS or no nearby posts)
+    if (city) {
+      return allPosts.filter(post => 
+        post.location.city.toLowerCase().includes(city.toLowerCase())
       );
     }
     
-    return allPosts.filter(post => post.category === category);
+    // Last resort: return all posts
+    return allPosts;
   };
 
-  // Filter posts by location
-  const getPostsByLocation = (city?: string, radius?: number): Post[] => {
-    if (!city) return allPosts;
-    
-    return allPosts.filter(post => 
-      post.location.city.toLowerCase().includes(city.toLowerCase())
-    );
-  };
-
-  // Advanced filtering
+  // Advanced filtering with GPS-based location prioritization
   const getPostsWithFilters = (filters: {
     category?: string;
     city?: string;
@@ -149,12 +239,42 @@ export function PostsProvider({ children }: PostsProviderProps) {
   }): Post[] => {
     let filtered = [...allPosts];
 
-    // Category filter
-    if (filters.category) {
-      filtered = getPostsByCategory(filters.category);
+    // 1. GPS-based location filtering (if user has location and no specific city filter)
+    if (!filters.city && locationData.lat && locationData.lng) {
+      const userLat = locationData.lat;
+      const userLng = locationData.lng;
+      const radius = locationData.radius || 50; // Use user's radius or 50km default
+      
+      // Add distance calculations and filter by proximity
+      filtered = filtered
+        .map(post => {
+          if (post.location.coordinates && 
+              post.location.coordinates.latitude && 
+              post.location.coordinates.longitude) {
+            const distance = calculateDistance(
+              userLat, userLng,
+              post.location.coordinates.latitude,
+              post.location.coordinates.longitude
+            );
+            return { ...post, distance, distanceKm: distance };
+          }
+          // Don't include posts without valid coordinates in GPS filtering
+          return null;
+        })
+        .filter((post): post is Post & { distance: number; distanceKm: number } => post !== null) // Remove posts without coordinates
+        .filter(post => {
+          // Only include posts within radius
+          return post.distance <= radius;
+        })
+        .sort((a, b) => a.distance - b.distance);
     }
 
-    // Location filter
+    // 2. Category filter
+    if (filters.category) {
+      filtered = filtered.filter(post => post.category === filters.category);
+    }
+
+    // 3. City name filter (overrides GPS if specified)
     if (filters.city) {
       filtered = filtered.filter(post =>
         post.location.city.toLowerCase().includes(filters.city!.toLowerCase())
