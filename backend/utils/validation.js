@@ -120,7 +120,7 @@ const postValidations = {
       .withMessage('Price must be a positive number'),
     body('price.type')
       .optional()
-      .isIn(['fixed', 'negotiable', 'free', 'hourly', 'daily', 'monthly'])
+      .isIn(['fixed', 'hourly', 'negotiable', 'yearly', 'monthly'])
       .withMessage('Invalid price type'),
     body('images')
       .optional()
