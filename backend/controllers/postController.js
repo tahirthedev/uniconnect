@@ -97,7 +97,8 @@ const getPosts = async (req, res) => {
       sort = 'recent',
       lat,
       lng,
-      radius = 20 // radius in kilometers
+      radius = 20, // radius in kilometers
+      search // search query parameter
     } = req.query;
 
     // Build smart location query using new system
@@ -120,6 +121,15 @@ const getPosts = async (req, res) => {
       baseFilters['price.amount'] = {};
       if (priceMin) baseFilters['price.amount'].$gte = parseFloat(priceMin);
       if (priceMax) baseFilters['price.amount'].$lte = parseFloat(priceMax);
+    }
+
+    // Apply search filter
+    if (search && search.trim()) {
+      baseFilters.$or = [
+        { title: { $regex: search.trim(), $options: 'i' } },
+        { description: { $regex: search.trim(), $options: 'i' } },
+        { tags: { $in: [new RegExp(search.trim(), 'i')] } }
+      ];
     }
 
     // Combine base filters with location query
@@ -567,7 +577,8 @@ const searchPosts = async (req, res) => {
 // Get posts by user
 const getUserPosts = async (req, res) => {
   try {
-    const { userId } = req.params;
+    // Handle both /user/:userId and /my-posts routes
+    const userId = req.params.userId || req.user._id;
     const { page = 1, limit = 20, status = 'active' } = req.query;
 
     // Check if requesting own posts or if admin/moderator
@@ -626,6 +637,40 @@ const getUserPosts = async (req, res) => {
   }
 };
 
+// Get user posts statistics
+const getUserStats = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Get all user posts
+    const userPosts = await Post.find({ author: userId });
+
+    // Calculate statistics
+    const totalPosts = userPosts.length;
+    const activePosts = userPosts.filter(post => post.status === 'active').length;
+    const totalViews = userPosts.reduce((sum, post) => sum + (post.views || 0), 0);
+    const totalLikes = userPosts.reduce((sum, post) => sum + (post.likes ? post.likes.length : 0), 0);
+
+    res.json({
+      success: true,
+      stats: {
+        totalPosts,
+        activePosts,
+        totalViews,
+        totalLikes
+      }
+    });
+
+  } catch (error) {
+    console.error('Get user stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get user statistics',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 module.exports = {
   createPost,
   getPosts,
@@ -634,5 +679,6 @@ module.exports = {
   deletePost,
   toggleLike,
   searchPosts,
-  getUserPosts
+  getUserPosts,
+  getUserStats
 };

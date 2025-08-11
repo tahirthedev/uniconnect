@@ -9,7 +9,8 @@ const {
   deletePost,
   toggleLike,
   searchPosts,
-  getUserPosts
+  getUserPosts,
+  getUserStats
 } = require('../controllers/postController');
 
 const { authenticate, optionalAuth, ownerOrModerator } = require('../middleware/auth');
@@ -18,13 +19,19 @@ const { postValidations, commonValidations } = require('../utils/validation');
 // Public routes (with optional auth for personalization)
 router.get('/', optionalAuth, postValidations.search, getPosts);
 router.get('/search', optionalAuth, postValidations.search, searchPosts);
-router.get('/:postId', optionalAuth, commonValidations.objectId('postId'), getPostById);
+
+// Current user routes (must be above /:postId to avoid conflicts)
+router.get('/my-posts', authenticate, getUserPosts);
+router.get('/my-stats', authenticate, getUserStats);
 
 // User-specific routes
 router.get('/user/:userId', optionalAuth, [
   commonValidations.objectId('userId'),
   ...commonValidations.pagination
 ], getUserPosts);
+
+// Dynamic route for individual posts (must be after specific routes)
+router.get('/:postId', optionalAuth, commonValidations.objectId('postId'), getPostById);
 
 // Protected routes
 router.post('/', authenticate, (req, res, next) => {
