@@ -227,7 +227,7 @@ export default function RidesharingPage() {
               <ArrowLeft className="h-6 w-6 text-gray-600 hover:text-orange-600" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Pick & Drop</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Request/Offer Ride</h1>
               <div className="flex items-center space-x-2 text-gray-600">
                 <p>Find or offer rides across UK universities</p>
                 {locationData.hasLocation && (
@@ -322,7 +322,7 @@ export default function RidesharingPage() {
                         onClick={() => handleBookRide(ride._id)}
                         className="bg-orange-500 hover:bg-orange-600"
                       >
-                        Book Ride
+                        Request Ride
                       </Button>
                       <Button
                         variant="outline"

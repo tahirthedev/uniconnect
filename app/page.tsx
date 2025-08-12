@@ -828,8 +828,8 @@ export default function HomePage() {
             <div className="animate-fade-in" style={{animationDelay: '0.2s'}}>
               <h3 className="text-lg font-semibold mb-4 text-orange-400">Legal</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Privacy Policy</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Terms of Service</a></li>
+                <li><Link href="/privacy" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Terms of Service</Link></li>
                 <li><a href="#" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Cookie Policy</a></li>
                 <li><a href="#" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Data Protection</a></li>
               </ul>
