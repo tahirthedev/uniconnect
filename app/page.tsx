@@ -578,28 +578,109 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Services Section - Magic Bento */}
-      <section id="services" className="py-24 bg-white transition-colors duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16 animate-slide-up">
-            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4 transition-colors duration-300">All Your Student Essentials</h2>
-            <p className="text-xl text-gray-600 transition-colors duration-300">Everything you need in one place</p>
-          </div>
-          
-          <div className="animate-fade-in" style={{animationDelay: '0.2s'}}>
-            <MagicBento 
-              textAutoHide={true}
-              enableStars={true}
-              enableSpotlight={true}
-              enableBorderGlow={true}
-              enableTilt={true}
-              enableMagnetism={true}
-              clickEffect={true}
-              spotlightRadius={300}
-              particleCount={8}
-              glowColor="251, 146, 60"
-              onCardClick={handleCardClick}
-            />
+      {/* Featured Image Section */}
+      <section id="featured" className="py-24 bg-gradient-to-br from-white via-orange-50/30 to-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-100/10 via-transparent to-orange-100/10"></div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            
+            {/* Left Content */}
+            <div className="space-y-8 animate-slide-up">
+              <div>
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                  Your Student Life
+                  <span className="block bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+                    Simplified
+                  </span>
+                </h2>
+                <p className="text-xl text-gray-600 leading-relaxed">
+                  From finding the perfect flat to landing your dream job, we connect students with everything they need to thrive at university.
+                </p>
+              </div>
+              
+              <div className="grid sm:grid-cols-2 gap-6">
+                <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center mb-4">
+                    <Home className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Housing</h3>
+                  <p className="text-gray-600 text-sm">Find affordable student accommodation near campus</p>
+                </div>
+                
+                <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl flex items-center justify-center mb-4">
+                    <Briefcase className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Jobs</h3>
+                  <p className="text-gray-600 text-sm">Discover part-time work opportunities</p>
+                </div>
+                
+                <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center mb-4">
+                    <Car className="h-6 w-6 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Transport</h3>
+                  <p className="text-gray-600 text-sm">Share rides with fellow students</p>
+                </div>
+                
+                <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+                  <div className="w-12 h-12 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center mb-4">
+                    <ShoppingBag className="h-6 w-6 text-pink-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Marketplace</h3>
+                  <p className="text-gray-600 text-sm">Buy and sell student essentials</p>
+                </div>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href="/posts">
+                  <Button 
+                    size="lg" 
+                    className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white px-8 py-4 text-lg font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                  >
+                    Explore All Services
+                    <ArrowRight className="ml-3 h-5 w-5" />
+                  </Button>
+                </Link>
+                <Link href="/auth">
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    className="border-2 border-gray-300 hover:bg-gray-50 px-8 py-4 text-lg font-semibold rounded-2xl transition-all duration-200"
+                  >
+                    Join Community
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            
+            {/* Right Image */}
+            <div className="relative animate-fade-in" style={{animationDelay: '0.3s'}}>
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-200/50 to-orange-300/50 rounded-3xl transform rotate-3 scale-105"></div>
+                <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-200">
+                  <Image
+                    src="/hero-image.jpg"
+                    alt="Student Life Simplified"
+                    width={600}
+                    height={400}
+                    className="w-full h-auto object-cover"
+                    priority
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                </div>
+              </div>
+              
+              {/* Floating Elements */}
+              <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-xl animate-bounce">
+                <Users className="h-8 w-8 text-white" />
+              </div>
+              <div className="absolute -bottom-6 -left-6 w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-500 rounded-2xl flex items-center justify-center shadow-xl animate-bounce" style={{animationDelay: '0.5s'}}>
+                <MessageCircle className="h-6 w-6 text-white" />
+              </div>
+            </div>
+            
           </div>
         </div>
       </section>
