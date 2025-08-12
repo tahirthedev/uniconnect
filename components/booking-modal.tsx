@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 import { 
   MapPin, 
   Calendar, 
@@ -43,6 +44,7 @@ export default function BookingModal({ isOpen, onClose, ride, onBooking }: Booki
   const [selectedSeats, setSelectedSeats] = useState(1);
   const [contactMethod, setContactMethod] = useState('message');
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   if (!isOpen || !ride) return null;
 
@@ -65,7 +67,11 @@ export default function BookingModal({ isOpen, onClose, ride, onBooking }: Booki
     // Validate seats before booking
     if (!selectedSeats || selectedSeats < 1 || selectedSeats > 8 || isNaN(selectedSeats)) {
       console.error('Invalid seats value:', selectedSeats);
-      alert('Please select a valid number of seats (1-8)');
+      toast({
+        title: "Invalid selection",
+        description: "Please select a valid number of seats (1-8).",
+        variant: "destructive",
+      });
       return;
     }
 

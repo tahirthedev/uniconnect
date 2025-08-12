@@ -6,13 +6,15 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ChevronDown, ChevronRight, Star, MapPin, Briefcase, Home, MessageCircle, Shield, Users, Clock, ArrowRight, GraduationCap, BookOpen, Coffee, Zap, Heart, Twitter, Instagram, Linkedin, Mail, Search, Car, Building, DollarSign, ShoppingBag, TrendingUp, Smartphone, Bell } from 'lucide-react'
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from 'next/navigation'
 import LocationDisplay from "@/components/location-display"
 import MagicBento from "@/components/MagicBento"
 import LightRays from "@/components/LightRays"
 import BackToTop from "@/components/back-to-top"
-import { useRouter } from 'next/navigation'
+import MessagingModal from "@/components/messaging-modal"
 import { useLocationData } from '@/contexts/LocationContext'
 import { usePosts, usePostsWithFilters } from '@/contexts/PostsContext'
+import { getPostUrl, isClickablePost, shouldShowContactButton } from '@/lib/post-utils'
 
 export default function HomePage() {
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null)
@@ -20,6 +22,19 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedCity, setSelectedCity] = useState('all')
+  const [messagingModal, setMessagingModal] = useState<{
+    isOpen: boolean;
+    recipientName: string;
+    recipientId: string;
+    postTitle: string;
+    postId: string;
+  }>({
+    isOpen: false,
+    recipientName: '',
+    recipientId: '',
+    postTitle: '',
+    postId: ''
+  })
   const router = useRouter()
   const locationData = useLocationData()
   const { allPosts } = usePosts()
@@ -47,6 +62,33 @@ export default function HomePage() {
 
   const handleCardClick = (href: string) => {
     router.push(href)
+  }
+
+  const handlePostClick = (post: any) => {
+    if (isClickablePost(post.category)) {
+      const url = getPostUrl(post)
+      router.push(url)
+    } else if (shouldShowContactButton(post.category)) {
+      // Open messaging modal for ridesharing posts
+      setMessagingModal({
+        isOpen: true,
+        recipientName: post.authorInfo?.name || post.author?.name || 'Unknown',
+        recipientId: post.authorInfo?._id || post.author?._id || post.user?._id || '',
+        postTitle: post.title,
+        postId: post._id
+      })
+    }
+  }
+
+  const handleContactPost = (post: any, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent card click
+    setMessagingModal({
+      isOpen: true,
+      recipientName: post.authorInfo?.name || post.author?.name || 'Unknown',
+      recipientId: post.authorInfo?._id || post.author?._id || post.user?._id || '',
+      postTitle: post.title,
+      postId: post._id
+    })
   }
 
   const handleCategoryChange = (categoryId: string) => {
@@ -348,7 +390,13 @@ export default function HomePage() {
                 {/* Posts Grid */}
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {posts.slice(0, 6).map((post) => (
-                    <Card key={post._id} className="group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-0 shadow-lg overflow-hidden bg-white">
+                    <Card 
+                      key={post._id} 
+                      className={`group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-0 shadow-lg overflow-hidden bg-white ${
+                        isClickablePost(post.category) ? 'cursor-pointer' : ''
+                      }`}
+                      onClick={() => handlePostClick(post)}
+                    >
                       <CardContent className="p-0">
                         {/* Category Badge */}
                         <div className="relative">
@@ -386,7 +434,7 @@ export default function HomePage() {
                           </p>
                           
                           {/* Meta Info */}
-                          <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center justify-between text-sm mb-4">
                             <div className="flex items-center gap-1 text-gray-500">
                               <MapPin className="h-4 w-4" />
                               <span className="font-medium">{post.location?.city || 'Unknown'}</span>
@@ -395,6 +443,30 @@ export default function HomePage() {
                               <div className="font-bold text-orange-600 text-lg">
                                 £{post.price.amount}
                               </div>
+                            )}
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex gap-2">
+                            {isClickablePost(post.category) && (
+                              <Button 
+                                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handlePostClick(post)
+                                }}
+                              >
+                                View Details
+                              </Button>
+                            )}
+                            {shouldShowContactButton(post.category) && (
+                              <Button 
+                                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+                                onClick={(e) => handleContactPost(post, e)}
+                              >
+                                <MessageCircle className="h-4 w-4 mr-2" />
+                                Contact
+                              </Button>
                             )}
                           </div>
                         </div>
@@ -843,6 +915,16 @@ export default function HomePage() {
       
       {/* Back to Top Button */}
       <BackToTop />
+
+      {/* Messaging Modal */}
+      <MessagingModal
+        isOpen={messagingModal.isOpen}
+        onClose={() => setMessagingModal({ ...messagingModal, isOpen: false })}
+        recipientName={messagingModal.recipientName}
+        recipientId={messagingModal.recipientId}
+        rideTitle={messagingModal.postTitle}
+        rideId={messagingModal.postId}
+      />
     </div>
   )
 }

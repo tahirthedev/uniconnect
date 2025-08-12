@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 import { 
   ArrowLeft, 
   Car, 
@@ -44,6 +45,7 @@ interface Ride {
 export default function RidesharingPage() {
   // Global location state
   const locationData = useLocationData();
+  const { toast } = useToast();
   
   // Use PostsContext for ridesharing posts
   const { posts: ridesharingPosts, loading, error } = usePostsByCategory('ridesharing');
@@ -81,7 +83,11 @@ export default function RidesharingPage() {
   const handleBookRide = (rideId: string) => {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert('Please sign in to book a ride');
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to book a ride.",
+        variant: "destructive",
+      });
       window.location.href = '/auth';
       return;
     }
@@ -96,7 +102,11 @@ export default function RidesharingPage() {
   const handleMessage = (rideId: string, driverName: string) => {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert('Please sign in to message drivers');
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to message drivers.",
+        variant: "destructive",
+      });
       window.location.href = '/auth';
       return;
     }
@@ -113,7 +123,11 @@ export default function RidesharingPage() {
       // Check authentication
       const token = localStorage.getItem('token');
       if (!token) {
-        alert('Please sign in to book a ride');
+        toast({
+          title: "Sign in required",
+          description: "Please sign in to book a ride.",
+          variant: "destructive",
+        });
         window.location.href = '/auth';
         return;
       }
@@ -121,7 +135,11 @@ export default function RidesharingPage() {
       // Validate seats value
       if (!seats || seats < 1 || seats > 8 || isNaN(seats)) {
         console.error('Invalid seats value received:', seats);
-        alert('Invalid number of seats. Please try again.');
+        toast({
+          title: "Invalid selection",
+          description: "Invalid number of seats. Please try again.",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -134,10 +152,16 @@ export default function RidesharingPage() {
       try {
         // Try to send booking to backend
         await apiClient.bookRide(rideId, bookingData);
-        alert(`Booking confirmed! ${seats} seat(s) booked via backend. The driver will contact you via ${contactMethod}.`);
+        toast({
+          title: "Booking confirmed! 🎉",
+          description: `${seats} seat(s) booked via backend. The driver will contact you via ${contactMethod}.`,
+        });
       } catch (error) {
         // Simulate booking locally if backend fails
-        alert(`Booking confirmed (simulated)! ${seats} seat(s) booked. The driver will contact you via ${contactMethod}.`);
+        toast({
+          title: "Booking confirmed! (simulated)",
+          description: `${seats} seat(s) booked. The driver will contact you via ${contactMethod}.`,
+        });
       }
       
       // Update the ride's available seats locally in the posts context
@@ -164,7 +188,11 @@ export default function RidesharingPage() {
       }
     } catch (error) {
       console.error('Booking error:', error);
-      alert('Failed to book ride. Please try again.');
+      toast({
+        title: "Booking failed",
+        description: "Failed to book ride. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 

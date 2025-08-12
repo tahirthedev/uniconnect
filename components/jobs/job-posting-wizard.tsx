@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -99,6 +100,7 @@ export default function JobPostingWizard() {
   const [newRequirement, setNewRequirement] = useState('');
   const [newSkill, setNewSkill] = useState('');
   const [newBenefit, setNewBenefit] = useState('');
+  const { toast } = useToast();
 
   const steps = [
     { number: 1, title: 'Job Type & Company', icon: Building2 },
@@ -234,12 +236,19 @@ export default function JobPostingWizard() {
 
       const result = await apiClient.createPost(jobData);
       
-      alert('🎉 Job posted successfully! Your listing is now live.');
+      toast({
+        title: "Job posted successfully! 🎉",
+        description: "Your job listing is now live and visible to students.",
+      });
       window.location.href = '/jobs?success=true';
       
     } catch (error) {
       console.error('Error posting job:', error);
-      alert('❌ Failed to post job. Please try again.');
+      toast({
+        title: "Failed to post job",
+        description: "Please check your information and try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }

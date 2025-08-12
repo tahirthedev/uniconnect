@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Calendar, 
   Clock, 
@@ -44,6 +45,7 @@ export default function UserBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadBookings();
@@ -78,10 +80,17 @@ export default function UserBookings() {
         )
       );
       
-      alert('Booking cancelled successfully');
+      toast({
+        title: "Booking cancelled",
+        description: "Your booking has been successfully cancelled.",
+      });
     } catch (error) {
       console.error('Failed to cancel booking:', error);
-      alert('Failed to cancel booking. Please try again.');
+      toast({
+        title: "Cancellation failed",
+        description: "Failed to cancel booking. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setCancellingId(null);
     }

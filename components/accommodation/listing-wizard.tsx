@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import StepIndicator from '@/components/accommodation/step-indicator';
 import PropertyTypeStep from '@/components/accommodation/steps/property-type-step';
 import PropertyDetailsStep from '@/components/accommodation/steps/property-details-step';
@@ -121,6 +122,7 @@ export default function ListingWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<PropertyListing>(initialData);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const totalSteps = 6;
   const progressPercentage = (currentStep / totalSteps) * 100;
@@ -214,14 +216,21 @@ export default function ListingWizard() {
       const result = await apiClient.createPost(postData);
       
       // Show success message
-      alert('🎉 Property listed successfully! Your listing is now live.');
+      toast({
+        title: "Property listed successfully! 🎉",
+        description: "Your accommodation listing is now live and visible to students.",
+      });
       
       // Redirect to accommodation page
       window.location.href = '/accommodation?success=true';
       
     } catch (error) {
       console.error('Error submitting listing:', error);
-      alert('❌ Failed to submit listing. Please try again.');
+      toast({
+        title: "Failed to submit listing",
+        description: "Please check your information and try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }

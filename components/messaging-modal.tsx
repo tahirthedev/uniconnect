@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
 import { 
   X, 
   Send, 
@@ -46,6 +47,7 @@ export default function MessagingModal({
   const [sending, setSending] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
@@ -109,7 +111,11 @@ export default function MessagingModal({
       setNewMessage('');
     } catch (error) {
       console.error('Failed to send message:', error);
-      alert('Failed to send message. Please try again.');
+      toast({
+        title: "Message failed",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setSending(false);
     }

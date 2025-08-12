@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Search, MapPin } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 interface SearchFormProps {
   className?: string;
@@ -12,6 +13,7 @@ export default function SearchForm({ className = "" }: SearchFormProps) {
   const [location, setLocation] = useState('London');
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
+  const { toast } = useToast();
 
   const ukCities = [
     'London', 'Manchester', 'Birmingham', 'Edinburgh', 'Glasgow', 
@@ -23,7 +25,11 @@ export default function SearchForm({ className = "" }: SearchFormProps) {
     e.preventDefault();
     
     if (!searchQuery.trim()) {
-      alert('Please enter a search term');
+      toast({
+        title: "Search required",
+        description: "Please enter a search term to continue.",
+        variant: "destructive",
+      });
       return;
     }
 

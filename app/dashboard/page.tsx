@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useToast } from "@/hooks/use-toast"
+import { usePosts } from '@/contexts/PostsContext'
 import { 
   User, 
   MapPin, 
@@ -59,6 +61,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [deletingPostId, setDeletingPostId] = useState<string | null>(null)
   const router = useRouter()
+  const { toast } = useToast()
+  const { deletePost: deletePostFromContext } = usePosts()
 
   const categoryIcons = {
     'pick-drop': Car,
@@ -125,12 +129,30 @@ export default function DashboardPage() {
 
     setDeletingPostId(postId)
     try {
+      // Delete from backend database
       await apiClient.deletePost(postId)
+      
+      // Remove from local dashboard state
       setPosts(posts.filter(post => post._id !== postId))
-      fetchUserStats() // Refresh stats
+      
+      // Remove from global PostsContext cache so other pages are updated
+      deletePostFromContext(postId)
+      
+      // Refresh stats
+      fetchUserStats()
+      
+      // Show success message
+      toast({
+        title: "Post deleted",
+        description: "Your post has been successfully deleted.",
+      })
     } catch (error) {
       console.error('Error deleting post:', error)
-      alert('Failed to delete post. Please try again.')
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete post. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setDeletingPostId(null)
     }

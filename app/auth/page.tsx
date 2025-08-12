@@ -4,11 +4,13 @@ import { useState } from "react";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { apiClient } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -37,7 +39,10 @@ export default function AuthPage() {
           if (response.user) {
             localStorage.setItem('userInfo', JSON.stringify(response.user));
           }
-          alert('Login successful!');
+          toast({
+            title: "Welcome back!",
+            description: "You have been successfully logged in.",
+          });
           window.location.href = '/';
         } else {
           throw new Error(response.message || 'Login failed');
@@ -55,7 +60,10 @@ export default function AuthPage() {
           if (response.user) {
             localStorage.setItem('userInfo', JSON.stringify(response.user));
           }
-          alert('Registration successful!');
+          toast({
+            title: "Account created!",
+            description: "Welcome to SayDone! Your account has been successfully created.",
+          });
           window.location.href = '/';
         } else {
           throw new Error(response.message || 'Registration failed');
@@ -69,6 +77,11 @@ export default function AuthPage() {
       // Provide user-friendly messages for common errors
       if (errorMessage.includes('User already exists')) {
         errorMessage = 'An account with this email already exists. Please try logging in instead or use a different email.';
+        toast({
+          title: "Account already exists",
+          description: errorMessage,
+          variant: "destructive",
+        });
         // Automatically switch to login mode for better UX
         if (!isLogin) {
           setTimeout(() => {
@@ -79,11 +92,25 @@ export default function AuthPage() {
         }
       } else if (errorMessage.includes('Invalid credentials')) {
         errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        toast({
+          title: "Login failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
       } else if (errorMessage.includes('Validation errors')) {
         errorMessage = 'Please check your information and ensure all fields are filled correctly.';
+        toast({
+          title: "Validation error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: isLogin ? "Login failed" : "Registration failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
       }
-      
-      alert(errorMessage);
     } finally {
       setLoading(false);
     }

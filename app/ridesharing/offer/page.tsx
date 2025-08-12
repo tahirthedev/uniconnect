@@ -6,6 +6,7 @@ import Navigation from '@/components/navigation';
 import LocationSelector from '@/components/location-selector';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -23,6 +24,7 @@ import { ApiClient } from '@/lib/api';
 const apiClient = new ApiClient();
 
 export default function OfferRidePage() {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -154,7 +156,11 @@ export default function OfferRidePage() {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        alert('Please sign in to offer a ride');
+        toast({
+          title: "Sign in required",
+          description: "Please sign in to offer a ride.",
+          variant: "destructive",
+        });
         window.location.href = '/auth';
         return;
       }
@@ -211,7 +217,10 @@ export default function OfferRidePage() {
 
       await apiClient.createPost(postData);
 
-      alert('Ride offer created successfully!');
+      toast({
+        title: "Ride offer created! 🎉",
+        description: "Your ride offer is now live and visible to students.",
+      });
       window.location.href = '/ridesharing';
       
     } catch (error: any) {

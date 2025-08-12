@@ -3,6 +3,7 @@ import './globals.css'
 import { LocationProvider } from '@/contexts/LocationContext'
 import { PostsProvider } from '@/contexts/PostsContext'
 import Navigation from '@/components/navigation'
+import { Toaster } from '@/components/ui/toaster'
 
 export const metadata: Metadata = {
   title: 'SayDone - Student Services Platform',
@@ -26,6 +27,7 @@ export default function RootLayout({
           <PostsProvider>
             <Navigation />
             {children}
+            <Toaster />
           </PostsProvider>
         </LocationProvider>
       </body>
