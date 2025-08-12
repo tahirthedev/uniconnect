@@ -81,14 +81,21 @@ export default function JobsPage() {
   
   // Use PostsContext for jobs posts
   const { posts: jobsPosts, loading, error } = usePostsByCategory('jobs');
-  const { updatePost } = usePosts();
+  const { updatePost, allPosts } = usePosts();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [selectedCity, setSelectedCity] = useState('all');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showMessagingModal, setShowMessagingModal] = useState(false);
   const [locationInfo, setLocationInfo] = useState<any>(null);
+
+  // Get available cities from jobs posts
+  const availableCities = useMemo(() => {
+    const jobCities = jobsPosts.map(post => post.location?.city).filter(Boolean);
+    return Array.from(new Set(jobCities)).sort();
+  }, [jobsPosts]);
 
   // Transform posts into jobs format
   const jobs = useMemo(() => {
@@ -142,9 +149,12 @@ export default function JobsPage() {
     const matchesLocation = !locationFilter || 
       (job.location && job.location.city.toLowerCase().includes(locationFilter.toLowerCase()));
     
+    const matchesCity = selectedCity === 'all' || 
+      (job.location && job.location.city === selectedCity);
+    
     const matchesType = !typeFilter || job.details?.job?.type === typeFilter;
     
-    return matchesSearch && matchesLocation && matchesType;
+    return matchesSearch && matchesLocation && matchesType && matchesCity;
   });
 
   const jobTypes = [
@@ -177,23 +187,23 @@ export default function JobsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 lg:mb-8 gap-4">
           <div className="flex items-center">
-            <Link href="/" className="mr-4">
-              <ArrowLeft className="h-6 w-6 text-gray-600 hover:text-orange-600" />
+            <Link href="/" className="mr-3 sm:mr-4">
+              <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600 hover:text-orange-600" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                <Briefcase className="h-8 w-8 text-orange-500 mr-3" />
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center">
+                <Briefcase className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-orange-500 mr-2 sm:mr-3" />
                 Jobs & Internships
               </h1>
-              <p className="text-gray-600">Find student-friendly job opportunities across the UK</p>
+              <p className="text-sm sm:text-base text-gray-600">Find student-friendly job opportunities across the UK</p>
             </div>
           </div>
           <Button 
-            className="bg-orange-500 hover:bg-orange-600"
+            className="bg-orange-500 hover:bg-orange-600 text-sm sm:text-base px-4 sm:px-6"
             onClick={() => router.push('/jobs/post')}
           >
             Post a Job
@@ -201,7 +211,7 @@ export default function JobsPage() {
         </div>
 
         {/* Search and Filters */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 mb-4 sm:mb-6">
           {/* Location Filter */}
           <div className="lg:col-span-1">
             <LocationFilter
@@ -242,6 +252,42 @@ export default function JobsPage() {
             </Card>
           </div>
         </div>
+
+        {/* City Filter */}
+        {availableCities.length > 0 && (
+          <div className="mb-4 sm:mb-6">
+            <Card>
+              <CardContent className="p-3 sm:p-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Filter by City</h3>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedCity('all')}
+                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-full font-medium transition-all duration-200 ${
+                      selectedCity === 'all'
+                        ? 'bg-orange-500 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    All Cities
+                  </button>
+                  {availableCities.map((city) => (
+                    <button
+                      key={city}
+                      onClick={() => setSelectedCity(city)}
+                      className={`px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-full font-medium transition-all duration-200 ${
+                        selectedCity === city
+                          ? 'bg-orange-500 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {city}
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Results */}
         <div className="space-y-4">

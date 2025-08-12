@@ -39,14 +39,37 @@ export default function Navigation() {
     logout()
     setIsLoggedIn(false)
     setUserInfo(null)
+    setIsOpen(false) // Close menu on logout
   }
+
+  const handleLinkClick = () => {
+    setIsOpen(false) // Close menu when any link is clicked
+  }
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const nav = document.querySelector('nav')
+      if (isOpen && nav && !nav.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3">
+          <Link href="/" className="flex items-center space-x-3" onClick={handleLinkClick}>
             <Image
               src="/logo.png"
               alt="SayDone Logo"
@@ -144,27 +167,27 @@ export default function Navigation() {
         {isOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t">
-              <Link href="/posts" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">
+              <Link href="/posts" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium" onClick={handleLinkClick}>
                 Posts
               </Link>
-              <Link href="/jobs" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">
+              <Link href="/jobs" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium" onClick={handleLinkClick}>
                 Jobs
               </Link>
-              <Link href="/ridesharing" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">
+              <Link href="/ridesharing" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium" onClick={handleLinkClick}>
                 Rides
               </Link>
-              <Link href="/accommodation" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">
+              <Link href="/accommodation" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium" onClick={handleLinkClick}>
                 Accommodation
               </Link>
-              <Link href="/marketplace" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">
+              <Link href="/marketplace" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium" onClick={handleLinkClick}>
                 Marketplace
               </Link>
-              <Link href="/messages" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">
+              <Link href="/messages" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium" onClick={handleLinkClick}>
                 Messages
               </Link>
               
               {isLoggedIn && (
-                <Link href="/dashboard" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">
+                <Link href="/dashboard" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium" onClick={handleLinkClick}>
                   My Posts
                 </Link>
               )}
@@ -183,10 +206,10 @@ export default function Navigation() {
                 </>
               ) : (
                 <>
-                  <Link href="/auth" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">
+                  <Link href="/auth" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium" onClick={handleLinkClick}>
                     Login
                   </Link>
-                  <Link href="/auth" className="block px-3 py-2 text-white bg-orange-500 hover:bg-orange-600 font-medium rounded-lg mx-3">
+                  <Link href="/auth" className="block px-3 py-2 text-white bg-orange-500 hover:bg-orange-600 font-medium rounded-lg mx-3" onClick={handleLinkClick}>
                     Get Started
                   </Link>
                 </>

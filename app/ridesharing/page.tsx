@@ -54,6 +54,7 @@ export default function RidesharingPage() {
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showMessagingModal, setShowMessagingModal] = useState(false);
+  const [selectedCity, setSelectedCity] = useState<string>('all');
 
   // Transform posts into rides format
   const rides = useMemo(() => {
@@ -76,6 +77,21 @@ export default function RidesharingPage() {
     }));
   }, [ridesharingPosts]);
 
+  // Get available cities for filtering
+  const availableCities = useMemo(() => {
+    const cities = ridesharingPosts.map(post => post.location?.city).filter(Boolean);
+    return [...new Set(cities)].sort();
+  }, [ridesharingPosts]);
+
+  // Filter rides by selected city
+  const filteredRides = useMemo(() => {
+    if (selectedCity === 'all') return rides;
+    return rides.filter(ride => {
+      const ridePost = ridesharingPosts.find(post => post._id === ride._id);
+      return ridePost?.location?.city === selectedCity;
+    });
+  }, [rides, selectedCity, ridesharingPosts]);
+
   const getPriceValue = (price: number | { amount: number; type: string; currency: string }): number => {
     return typeof price === 'object' ? price.amount : price;
   };
@@ -92,7 +108,7 @@ export default function RidesharingPage() {
       return;
     }
     
-    const ride = rides.find(r => r._id === rideId);
+    const ride = filteredRides.find(r => r._id === rideId);
     if (ride) {
       setSelectedRide(ride);
       setShowBookingModal(true);
@@ -111,7 +127,7 @@ export default function RidesharingPage() {
       return;
     }
     
-    const ride = rides.find(r => r._id === rideId);
+    const ride = filteredRides.find(r => r._id === rideId);
     if (ride) {
       setSelectedRide(ride);
       setShowMessagingModal(true);
@@ -219,23 +235,26 @@ export default function RidesharingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 lg:mb-8 gap-4">
           <div className="flex items-center">
-            <Link href="/" className="mr-4">
-              <ArrowLeft className="h-6 w-6 text-gray-600 hover:text-orange-600" />
+            <Link href="/" className="mr-3 sm:mr-4">
+              <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600 hover:text-orange-600" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Request/Offer Ride</h1>
-              <div className="flex items-center space-x-2 text-gray-600">
-                <p>Find or offer rides across UK universities</p>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center">
+                <Car className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-orange-500 mr-2 sm:mr-3" />
+                Ridesharing
+              </h1>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 text-gray-600">
+                <p className="text-sm sm:text-base">Find or offer rides across UK universities</p>
                 {locationData.hasLocation && (
                   <>
-                    <span>•</span>
-                    <div className="flex items-center space-x-1">
-                      <MapPin className="h-4 w-4 text-green-600" />
-                      <span className="text-sm text-green-600">Showing nearby rides ({locationData.radius || 20}km radius)</span>
+                    <span className="hidden sm:inline">•</span>
+                    <div className="flex items-center space-x-1 mt-1 sm:mt-0">
+                      <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+                      <span className="text-xs sm:text-sm text-green-600">Showing nearby rides ({locationData.radius || 20}km radius)</span>
                     </div>
                   </>
                 )}
@@ -244,7 +263,7 @@ export default function RidesharingPage() {
           </div>
           <div className="flex gap-3">
             <Link href="/ridesharing/offer">
-              <Button className="bg-orange-500 hover:bg-orange-600 flex items-center gap-2">
+              <Button className="bg-orange-500 hover:bg-orange-600 flex items-center gap-2 text-sm sm:text-base px-4 sm:px-6">
                 <Plus className="h-4 w-4" />
                 Offer Ride
               </Button>
@@ -252,9 +271,55 @@ export default function RidesharingPage() {
           </div>
         </div>
 
+        {/* City Filter */}
+        {availableCities.length > 0 && (
+          <div className="mb-4 sm:mb-6">
+            <Card>
+              <CardContent className="p-3 sm:p-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Filter by City</h3>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedCity('all')}
+                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-full font-medium transition-all duration-200 ${
+                      selectedCity === 'all'
+                        ? 'bg-orange-500 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    All Cities
+                  </button>
+                  {availableCities.map((city) => (
+                    <button
+                      key={city}
+                      onClick={() => setSelectedCity(city)}
+                      className={`px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-full font-medium transition-all duration-200 ${
+                        selectedCity === city
+                          ? 'bg-orange-500 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {city}
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Results Summary */}
+        <div className="mb-4">
+          <p className="text-gray-600">
+            {selectedCity !== 'all'
+              ? `Showing ${filteredRides.length} ride${filteredRides.length !== 1 ? 's' : ''} in ${selectedCity}`
+              : `Showing all ${filteredRides.length} ride${filteredRides.length !== 1 ? 's' : ''}`
+            }
+          </p>
+        </div>
+
         {/* Rides List */}
         <div className="space-y-4">
-          {rides.length === 0 ? (
+          {filteredRides.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
                 <Car className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -268,7 +333,7 @@ export default function RidesharingPage() {
               </CardContent>
             </Card>
           ) : (
-            rides.map((ride) => (
+            filteredRides.map((ride) => (
               <Card key={ride._id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start">

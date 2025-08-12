@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from "react";
-import { ArrowLeft, MapPin, Calendar, User, Filter, MessageCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, User, Filter, MessageCircle, Car, Home, Briefcase, ShoppingBag, DollarSign, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import LocationFilter from "@/components/location-filter";
@@ -53,15 +53,31 @@ export default function PostsPage() {
   // Global location state
   const locationData = useLocationData();
   const { updateRadius } = useLocation();
+  const { allPosts } = usePosts();
   
   // Use PostsContext with filters
   const [filters, setFilters] = useState({
     category: '',
+    city: 'all',
   });
   
   const { posts, loading, error } = usePostsWithFilters({
-    category: filters.category || undefined
+    category: filters.category || undefined,
+    city: filters.city === 'all' ? undefined : filters.city
   });
+  
+  // Get available cities from ALL posts
+  const availableCities = Array.from(new Set(allPosts.map(post => post.location.city))).sort();
+  
+  // Category configuration
+  const categories = [
+    { id: 'all', label: 'All Categories', icon: TrendingUp, color: 'bg-gray-500' },
+    { id: 'pick-drop', label: 'Rides', icon: Car, color: 'bg-blue-500' },
+    { id: 'accommodation', label: 'Housing', icon: Home, color: 'bg-green-500' },
+    { id: 'jobs', label: 'Jobs', icon: Briefcase, color: 'bg-purple-500' },
+    { id: 'buy-sell', label: 'Marketplace', icon: ShoppingBag, color: 'bg-pink-500' },
+    { id: 'currency-exchange', label: 'Currency', icon: DollarSign, color: 'bg-yellow-500' },
+  ];
   
   const [locationBased, setLocationBased] = useState(false);
   const [messagingModal, setMessagingModal] = useState<{
@@ -81,6 +97,15 @@ export default function PostsPage() {
   const handleFilterChange = useCallback((key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
+
+  const handleCategoryChange = (categoryId: string) => {
+    if (filters.category === categoryId) return;
+    setFilters(prev => ({ ...prev, category: categoryId === 'all' ? '' : categoryId }));
+  };
+
+  const handleCityChange = (city: string) => {
+    setFilters(prev => ({ ...prev, city }));
+  };
 
   const handleLocationFilterChange = useCallback((newLocationFilter: any) => {
     // Only update radius if it has changed
@@ -122,15 +147,14 @@ export default function PostsPage() {
         <div className="mb-8">
           <div className="flex items-center mb-4">
             <Link href="/" className="mr-4">
-              <Button variant="ghost" size="sm" className="p-2 hover:bg-white/80">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
+              <ArrowLeft className="h-6 w-6 text-gray-600 hover:text-orange-600" />
             </Link>
             <div className="flex-1">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center">
+                <TrendingUp className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-orange-500 mr-2 sm:mr-3" />
                 Browse Posts
               </h1>
-              <p className="text-gray-600 mt-1">Discover opportunities from the community</p>
+              <p className="text-sm sm:text-base text-gray-600">Discover opportunities from the community</p>
             </div>
           </div>
           
@@ -145,44 +169,92 @@ export default function PostsPage() {
         </div>
 
         {/* Filters */}
-        <Card className="mb-8 border-0 shadow-md bg-white/80 backdrop-blur-sm overflow-visible">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <Filter className="h-5 w-5 text-orange-600" />
-              <h2 className="text-lg font-semibold">Filters</h2>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0 overflow-visible">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-visible">
-              {/* Location Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Location & Radius</label>
-                <LocationFilter 
-                  onFilterChange={handleLocationFilterChange}
-                  defaultRadius={locationData.radius || 20}
-                  compact={true}
-                />
-              </div>
-              
-              {/* Category Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                <select 
-                  value={filters.category || ""} 
-                  onChange={(e) => handleFilterChange('category', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                >
-                  <option value="">All Categories</option>
-                  <option value="pick-drop">Pick & Drop</option>
-                  <option value="accommodation">Accommodation</option>
-                  <option value="jobs">Jobs</option>
-                  <option value="buy-sell">Marketplace</option>
-                  <option value="currency-exchange">Currency Exchange</option>
-                </select>
+        <div className="mb-8">
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+            
+            {/* Category Pills */}
+            <div className="p-8 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Browse by Category</h3>
+              <div className="flex flex-wrap gap-3">
+                {categories.map((category) => {
+                  const IconComponent = category.icon;
+                  const isActive = (category.id === 'all' && filters.category === '') || filters.category === category.id;
+                  
+                  return (
+                    <button
+                      key={category.id}
+                      onClick={() => handleCategoryChange(category.id)}
+                      className={`flex items-center gap-3 px-6 py-3 rounded-full font-semibold transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg ${
+                        isActive
+                          ? 'bg-orange-500 text-white shadow-lg scale-105'
+                          : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-orange-300 hover:text-orange-600'
+                      }`}
+                    >
+                      <IconComponent className="h-5 w-5" />
+                      <span className="text-sm font-medium">{category.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          </CardContent>
-        </Card>
+
+            {/* City Filter */}
+            {availableCities.length > 0 && (
+              <div className="p-4 sm:p-6 border-b border-gray-100">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4">Filter by City</h3>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => handleCityChange('all')}
+                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-full font-medium transition-all duration-200 ${
+                      filters.city === 'all'
+                        ? 'bg-blue-500 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    All Cities
+                  </button>
+                  {availableCities.map((city) => (
+                    <button
+                      key={city}
+                      onClick={() => handleCityChange(city)}
+                      className={`px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-full font-medium transition-all duration-200 ${
+                        filters.city === city
+                          ? 'bg-blue-500 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {city}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Location Filter */}
+            <div className="p-4 sm:p-6">
+              <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4">Location & Radius</h3>
+              <LocationFilter 
+                onFilterChange={handleLocationFilterChange}
+                defaultRadius={locationData.radius || 20}
+                compact={true}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Results Summary */}
+        {!loading && (
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              {filters.category === '' ? 'All Posts' : categories.find(c => c.id === filters.category)?.label}
+              {filters.city !== 'all' ? ` in ${filters.city}` : ''}
+            </h2>
+            <p className="text-gray-600">
+              Found <span className="font-semibold text-orange-600">{posts.length}</span> results
+              {filters.city !== 'all' ? ` in ${filters.city}` : ''}
+            </p>
+          </div>
+        )}
 
         {/* Loading State */}
         {loading && (
@@ -212,7 +284,7 @@ export default function PostsPage() {
 
         {/* Posts Grid */}
         {!loading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {posts.length === 0 ? (
               <div className="col-span-full">
                 <Card className="text-center py-16 bg-white/50 border-dashed border-2 border-gray-200">

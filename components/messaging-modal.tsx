@@ -16,6 +16,7 @@ interface Message {
   _id: string;
   sender: {
     _id: string;
+    id?: string; // Add optional id field
     name: string;
     avatar?: string;
   };
@@ -51,10 +52,47 @@ export default function MessagingModal({
 
   useEffect(() => {
     if (isOpen) {
-      // Get current user info
+      // Get current user info from multiple possible sources
+      let user = null;
+      
+      // Try userInfo first
       const userInfo = localStorage.getItem('userInfo');
       if (userInfo) {
-        setCurrentUser(JSON.parse(userInfo));
+        try {
+          user = JSON.parse(userInfo);
+        } catch (e) {
+          console.error('Failed to parse userInfo:', e);
+        }
+      }
+      
+      // Try user as fallback
+      if (!user) {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          try {
+            user = JSON.parse(userData);
+          } catch (e) {
+            console.error('Failed to parse user:', e);
+          }
+        }
+      }
+      
+      // Try token to get user ID
+      if (!user) {
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            // Decode JWT token to get user ID
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            user = { _id: payload.userId || payload.id, name: 'Current User' };
+          } catch (e) {
+            console.error('Failed to decode token:', e);
+          }
+        }
+      }
+      
+      if (user) {
+        setCurrentUser(user);
       }
       
       // Load conversation if we have recipient ID
@@ -144,64 +182,75 @@ export default function MessagingModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-      <Card className="w-full max-w-4xl h-[90vh] sm:h-[600px] flex flex-col mx-2 sm:mx-4">
-        <CardHeader className="flex flex-row items-center justify-between pb-3 px-3 sm:px-6">
+      <Card className="w-full max-w-2xl lg:max-w-4xl h-[95vh] sm:h-[85vh] lg:h-[600px] flex flex-col mx-2 sm:mx-4">
+        <CardHeader className="flex flex-row items-center justify-between pb-3 px-4 sm:px-6 border-b">
           <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
-            <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 flex-shrink-0" />
+            <MessageCircle className="h-5 w-5 text-orange-600 flex-shrink-0" />
             <div className="min-w-0 flex-1">
-              <CardTitle className="text-base sm:text-lg truncate">Message {recipientName}</CardTitle>
-              <p className="text-xs sm:text-sm text-gray-600 truncate">About: {rideTitle}</p>
+              <CardTitle className="text-lg font-semibold truncate">Message {recipientName}</CardTitle>
+              <p className="text-sm text-gray-600 truncate">About: {rideTitle}</p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="h-6 w-6 flex-shrink-0"
+            className="h-8 w-8 flex-shrink-0 hover:bg-gray-100"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </Button>
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col p-0 min-h-0">
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
             {loading ? (
               <div className="flex justify-center items-center h-32">
-                <div className="text-gray-500 text-sm">Loading conversation...</div>
+                <div className="text-gray-500">Loading conversation...</div>
               </div>
             ) : messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-32 text-gray-500">
-                <MessageCircle className="h-6 w-6 sm:h-8 sm:w-8 mb-2" />
-                <p className="text-sm text-center px-4">No messages yet. Start the conversation!</p>
+                <MessageCircle className="h-8 w-8 mb-2" />
+                <p className="text-center px-4">No messages yet. Start the conversation!</p>
               </div>
             ) : (
               messages.map((message, index) => {
-                const isCurrentUser = currentUser && message.sender?._id === currentUser._id;
+                // More robust current user detection
+                const currentUserId = currentUser?._id || currentUser?.id;
+                const messageSenderId = message.sender?._id || message.sender?.id;
+                const isCurrentUser = currentUserId && messageSenderId && 
+                  (currentUserId === messageSenderId || currentUserId.toString() === messageSenderId.toString());
+                
                 const showDate = index === 0 || 
                   formatDate(messages[index - 1].createdAt) !== formatDate(message.createdAt);
 
                 return (
-                  <div key={message._id}>
+                  <div key={message._id} className="w-full">
                     {showDate && (
-                      <div className="text-center text-xs text-gray-500 my-2 sm:my-4">
-                        {formatDate(message.createdAt)}
+                      <div className="text-center text-xs text-gray-500 my-4">
+                        <span className="bg-white px-3 py-1 rounded-full border">
+                          {formatDate(message.createdAt)}
+                        </span>
                       </div>
                     )}
-                    <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] sm:max-w-[75%] lg:max-w-md px-3 py-2 rounded-lg break-words ${
+                    <div className={`flex w-full ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-2`}>
+                      <div className={`max-w-[80%] sm:max-w-[70%] lg:max-w-md px-4 py-3 rounded-2xl shadow-sm ${
                         isCurrentUser 
-                          ? 'bg-orange-500 text-white' 
-                          : 'bg-white border'
+                          ? 'bg-orange-500 text-white rounded-br-md' 
+                          : 'bg-white border rounded-bl-md'
                       }`}>
                         {!isCurrentUser && (
-                          <div className="flex items-center mb-1">
-                            <User className="h-3 w-3 mr-1 flex-shrink-0" />
-                            <span className="text-xs font-medium truncate">{message.sender.name}</span>
+                          <div className="flex items-center mb-2">
+                            <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center mr-2">
+                              <User className="h-3 w-3 text-gray-600" />
+                            </div>
+                            <span className="text-xs font-medium text-gray-700">{message.sender.name}</span>
                           </div>
                         )}
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.messageBody}</p>
-                        <p className={`text-xs mt-1 ${
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                          {message.messageBody}
+                        </p>
+                        <p className={`text-xs mt-2 ${
                           isCurrentUser ? 'text-orange-100' : 'text-gray-500'
                         }`}>
                           {formatTime(message.createdAt)}
@@ -216,36 +265,42 @@ export default function MessagingModal({
           </div>
 
           {/* Message Input */}
-          <div className="border-t bg-white p-3 sm:p-4">
+          <div className="border-t bg-white p-4">
             {!recipientId ? (
               <div className="text-center text-gray-500 py-4">
-                <p className="text-sm">Messaging functionality requires user authentication.</p>
+                <p className="mb-3">Messaging functionality requires user authentication.</p>
                 <Button 
                   onClick={() => window.location.href = '/auth'} 
-                  className="mt-2"
+                  className="bg-orange-500 hover:bg-orange-600"
                   size="sm"
                 >
                   Sign In to Message
                 </Button>
               </div>
             ) : (
-              <form onSubmit={handleSendMessage} className="flex space-x-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none resize-none"
-                  disabled={sending}
-                  maxLength={1000}
-                />
+              <form onSubmit={handleSendMessage} className="flex space-x-3">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors"
+                    disabled={sending}
+                    maxLength={1000}
+                  />
+                </div>
                 <Button
                   type="submit"
                   disabled={sending || !newMessage.trim()}
-                  className="bg-orange-500 hover:bg-orange-600 flex-shrink-0"
+                  className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 h-12 w-12 rounded-full flex-shrink-0"
                   size="icon"
                 >
-                  <Send className="h-4 w-4" />
+                  {sending ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Send className="h-5 w-5" />
+                  )}
                 </Button>
               </form>
             )}

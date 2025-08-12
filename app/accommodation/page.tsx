@@ -18,6 +18,7 @@ import {
   Heart,
   Share2,
   MessageCircle,
+  ArrowLeft,
   Star,
   Bed,
   Bath,
@@ -38,13 +39,14 @@ export default function AccommodationPage() {
   
   // Use PostsContext for accommodation posts
   const { posts: accommodationPosts, loading, error } = usePostsByCategory('accommodation');
-  const { updatePost } = usePosts();
+  const { updatePost, allPosts } = usePosts();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [locationInfo, setLocationInfo] = useState<any>(null);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [showMessagingModal, setShowMessagingModal] = useState(false);
+  const [selectedCity, setSelectedCity] = useState('all');
   const [filters, setFilters] = useState({
     priceRange: 'all',
     accommodationType: 'all',
@@ -72,6 +74,46 @@ export default function AccommodationPage() {
       distanceKm: post.distanceKm
     }));
   }, [accommodationPosts]);
+
+  // Get available cities from accommodation posts
+  const availableCities = useMemo(() => {
+    const cities = accommodationPosts.map(post => post.location?.city).filter(Boolean);
+    return Array.from(new Set(cities)).sort();
+  }, [accommodationPosts]);
+
+  // Filter posts based on city selection and other filters
+  const filteredPosts = useMemo(() => {
+    return posts.filter((post: any) => {
+      // City filter
+      const matchesCity = selectedCity === 'all' || 
+        (post.location && post.location.city === selectedCity);
+
+      // Search term filter
+      const matchesSearch = !searchTerm || 
+        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (post.location && post.location.city && post.location.city.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      // Price range filter
+      const matchesPrice = filters.priceRange === 'all' || (() => {
+        if (!post.price) return false;
+        const price = parseFloat(post.price);
+        switch (filters.priceRange) {
+          case '0-300': return price <= 300;
+          case '300-500': return price > 300 && price <= 500;
+          case '500-800': return price > 500 && price <= 800;
+          case '800+': return price > 800;
+          default: return true;
+        }
+      })();
+
+      // Accommodation type filter
+      const matchesType = filters.accommodationType === 'all' || 
+        (post.details?.accommodation?.type === filters.accommodationType);
+
+      return matchesCity && matchesSearch && matchesPrice && matchesType;
+    });
+  }, [posts, selectedCity, searchTerm, filters]);
 
   const handleLocationFilterChange = useCallback((data: any) => {
     // Only update radius if it has changed and is a valid number
@@ -113,10 +155,10 @@ export default function AccommodationPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="bg-white rounded-lg p-6 shadow">
                   <div className="h-48 bg-gray-200 rounded mb-4"></div>
@@ -133,18 +175,23 @@ export default function AccommodationPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <Home className="h-8 w-8 text-orange-600" />
-              Student Accommodation
-            </h1>
-            <p className="text-gray-600 mt-2">Find your perfect home away from home</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 lg:mb-8 gap-4">
+          <div className="flex items-center">
+            <Link href="/" className="mr-3 sm:mr-4">
+              <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600 hover:text-orange-600" />
+            </Link>
+            <div>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center">
+                <Home className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-orange-500 mr-2 sm:mr-3" />
+                Student Accommodation
+              </h1>
+              <p className="text-sm sm:text-base text-gray-600">Find your perfect home away from home</p>
+            </div>
           </div>
           <Link href="/accommodation/list">
-            <Button className="mt-4 md:mt-0 bg-orange-600 hover:bg-orange-700">
+            <Button className="bg-orange-500 hover:bg-orange-600 text-sm sm:text-base px-4 sm:px-6">
               <Plus className="h-4 w-4 mr-2" />
               List Your Property
             </Button>
@@ -152,7 +199,7 @@ export default function AccommodationPage() {
         </div>
 
         {/* Search and Filters */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Location Filter */}
           <div className="lg:col-span-1">
             <LocationFilter
@@ -216,11 +263,47 @@ export default function AccommodationPage() {
           </div>
         </div>
 
+        {/* City Filter */}
+        {availableCities.length > 0 && (
+          <div className="mb-4 sm:mb-6">
+            <Card>
+              <CardContent className="p-3 sm:p-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Filter by City</h3>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedCity('all')}
+                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-full font-medium transition-all duration-200 ${
+                      selectedCity === 'all'
+                        ? 'bg-orange-500 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    All Cities
+                  </button>
+                  {availableCities.map((city) => (
+                    <button
+                      key={city}
+                      onClick={() => setSelectedCity(city)}
+                      className={`px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-full font-medium transition-all duration-200 ${
+                        selectedCity === city
+                          ? 'bg-orange-500 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {city}
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Results */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <p className="text-gray-600">
-              {posts.length} accommodation{posts.length !== 1 ? 's' : ''} available
+              {filteredPosts.length} accommodation{filteredPosts.length !== 1 ? 's' : ''} available
               {locationInfo && locationInfo.searchArea && (
                 <span className="text-sm text-gray-500 ml-2">
                   {locationInfo.searchArea.foundCity && ` in ${locationInfo.searchArea.foundCity}`}
@@ -241,14 +324,14 @@ export default function AccommodationPage() {
           </div>
           
           {/* Distance info for posts */}
-          {posts.length > 0 && locationInfo?.userLocation && (
+          {filteredPosts.length > 0 && locationInfo?.userLocation && (
             <p className="text-xs text-gray-500 mt-1">
               Sorted by distance from your location
             </p>
           )}
         </div>
 
-        {posts.length === 0 ? (
+        {filteredPosts.length === 0 ? (
           <Card className="text-center py-12">
             <CardContent>
               <Home className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -293,8 +376,8 @@ export default function AccommodationPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {posts.map((post: any) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {filteredPosts.map((post: any) => (
               <Card key={post._id} className="overflow-hidden hover:shadow-xl transition-all duration-200 cursor-pointer group">
                 <div 
                   onClick={() => router.push(`/accommodation/${post._id}`)}
