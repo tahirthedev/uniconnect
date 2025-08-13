@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from "react";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { apiClient } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -126,15 +127,15 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        {/* Back Button */}
-        <Link href="/" className="inline-flex items-center text-orange-600 hover:text-orange-700 mb-6">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Home
-        </Link>
-
         {/* Logo */}
         <div className="flex justify-center mb-6">
-          <div className="bg-orange-500 text-white px-4 py-3 rounded-xl font-bold text-2xl">UC</div>
+          <Image 
+            src="/logo.png" 
+            alt="UniConnect Logo" 
+            width={80} 
+            height={80} 
+            className="rounded-xl"
+          />
         </div>
 
         <h2 className="text-center text-3xl font-bold text-gray-900 mb-2">
