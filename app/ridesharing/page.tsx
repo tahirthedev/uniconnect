@@ -245,7 +245,7 @@ export default function RidesharingPage() {
             <div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center">
                 <Car className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-orange-500 mr-2 sm:mr-3" />
-                Ridesharing
+                Offer/Request Ride
               </h1>
               <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 text-gray-600">
                 <p className="text-sm sm:text-base">Find or offer rides across UK universities</p>
@@ -265,7 +265,7 @@ export default function RidesharingPage() {
             <Link href="/ridesharing/offer">
               <Button className="bg-orange-500 hover:bg-orange-600 flex items-center gap-2 text-sm sm:text-base px-4 sm:px-6">
                 <Plus className="h-4 w-4" />
-                Offer Ride
+                Request a Ride
               </Button>
             </Link>
           </div>
