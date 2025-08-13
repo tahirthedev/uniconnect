@@ -51,7 +51,9 @@ app.use(cors({
     'http://localhost:3001', // Add port 3001 for development
     'http://127.0.0.1:3000',
     'http://127.0.0.1:3001',
-    'https://uniconnect-production.up.railway.app', // Production frontend
+    'https://www.saydone.net', // New production domain
+    'https://saydone.net', // New production domain without www
+    'https://uniconnect-production.up.railway.app', // Old production frontend (backup)
     'https://perceptive-surprise-production.up.railway.app' // Production backend (for internal calls)
   ],
   credentials: true,

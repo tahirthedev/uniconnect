@@ -20,7 +20,8 @@ export default function AuthPage() {
 
   const handleGoogleAuth = () => {
     // Redirect to backend Google OAuth endpoint
-    window.location.href = 'http://localhost:5000/api/auth/google';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    window.location.href = `${apiUrl}/api/auth/google`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
