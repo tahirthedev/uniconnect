@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navigation from '@/components/navigation';
@@ -218,32 +218,59 @@ export default function JobDetailPage() {
                   )}
                 </div>
 
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{job.title}</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 break-words">{job.title}</h1>
                 
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
                   {job.details?.job?.company && (
                     <div className="flex items-center">
-                      <Building className="h-4 w-4 mr-1" />
-                      {job.details.job.company}
+                      <Building className="h-4 w-4 mr-1 flex-shrink-0" />
+                      <span className="truncate max-w-[200px]" title={job.details.job.company}>
+                        {job.details.job.company}
+                      </span>
                     </div>
                   )}
                   {job.location && (
                     <div className="flex items-center">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      {job.location.state ? `${job.location.city}, ${job.location.state}` : job.location.city}
+                      <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
+                      <span className="truncate max-w-[200px]">
+                        {job.location.state ? `${job.location.city}, ${job.location.state}` : job.location.city}
+                      </span>
                     </div>
                   )}
                   <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-1" />
+                    <Calendar className="h-4 w-4 mr-1 flex-shrink-0" />
                     Posted {formatDate(job.createdAt)}
                   </div>
                 </div>
 
-                <div className="text-2xl font-bold text-orange-600 mb-4">
+                <div className="text-xl md:text-2xl font-bold text-orange-600 mb-4">
                   {formatSalary(job.price)}
                 </div>
 
-                <p className="text-gray-700 leading-relaxed">{job.description}</p>
+                <div className="text-gray-700 leading-relaxed">
+                  <div className="max-h-32 overflow-hidden relative group">
+                    <p className="whitespace-pre-wrap break-words">{job.description}</p>
+                    {job.description.length > 300 && (
+                      <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-transparent group-hover:opacity-0 transition-opacity"></div>
+                    )}
+                  </div>
+                  {job.description.length > 300 && (
+                    <button 
+                      className="text-orange-600 hover:text-orange-700 text-sm font-medium mt-2 focus:outline-none"
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement;
+                        const desc = target.closest('.text-gray-700')?.querySelector('.max-h-32');
+                        if (desc) {
+                          desc.classList.toggle('max-h-32');
+                          desc.classList.toggle('max-h-none');
+                          target.textContent = desc.classList.contains('max-h-32') ? 'Read more' : 'Read less';
+                        }
+                      }}
+                    >
+                      Read more
+                    </button>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
@@ -257,9 +284,32 @@ export default function JobDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                    {job.details.job.responsibilities}
-                  </p>
+                  <div className="text-gray-700 leading-relaxed">
+                    <div className="max-h-48 overflow-hidden relative group">
+                      <p className="whitespace-pre-line break-words">
+                        {job.details.job.responsibilities}
+                      </p>
+                      {job.details.job.responsibilities.length > 500 && (
+                        <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-transparent group-hover:opacity-0 transition-opacity"></div>
+                      )}
+                    </div>
+                    {job.details.job.responsibilities.length > 500 && (
+                      <button 
+                        className="text-orange-600 hover:text-orange-700 text-sm font-medium mt-2 focus:outline-none"
+                        onClick={(e) => {
+                          const target = e.target as HTMLElement;
+                          const container = target.closest('.text-gray-700')?.querySelector('.max-h-48');
+                          if (container) {
+                            container.classList.toggle('max-h-48');
+                            container.classList.toggle('max-h-none');
+                            target.textContent = container.classList.contains('max-h-48') ? 'Show more' : 'Show less';
+                          }
+                        }}
+                      >
+                        Show more
+                      </button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -271,11 +321,11 @@ export default function JobDetailPage() {
                   <CardTitle>Requirements</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {job.details.job.requirements.map((req, index) => (
                       <div key={index} className="flex items-start">
-                        <CheckCircle className="h-4 w-4 mr-2 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700">{req}</span>
+                        <CheckCircle className="h-4 w-4 mr-3 text-green-500 mt-1 flex-shrink-0" />
+                        <span className="text-gray-700 break-words leading-relaxed">{req}</span>
                       </div>
                     ))}
                   </div>
@@ -291,12 +341,31 @@ export default function JobDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {job.details.job.skills.map((skill, index) => (
-                      <Badge key={index} variant="outline">
+                    {job.details.job.skills.slice(0, 8).map((skill, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
                         {skill}
                       </Badge>
                     ))}
+                    {job.details.job.skills.length > 8 && (
+                      <Badge variant="outline" className="text-xs bg-gray-100">
+                        +{job.details.job.skills.length - 8} more
+                      </Badge>
+                    )}
                   </div>
+                  {job.details.job.skills.length > 8 && (
+                    <details className="mt-3">
+                      <summary className="text-orange-600 hover:text-orange-700 text-sm font-medium cursor-pointer focus:outline-none">
+                        View all skills
+                      </summary>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {job.details.job.skills.slice(8).map((skill, index) => (
+                          <Badge key={index + 8} variant="outline" className="text-xs">
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                    </details>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -308,11 +377,11 @@ export default function JobDetailPage() {
                   <CardTitle>Benefits</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {job.details.job.benefits.map((benefit, index) => (
                       <div key={index} className="flex items-start">
-                        <CheckCircle className="h-4 w-4 mr-2 text-orange-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700">{benefit}</span>
+                        <CheckCircle className="h-4 w-4 mr-3 text-orange-500 mt-1 flex-shrink-0" />
+                        <span className="text-gray-700 break-words leading-relaxed">{benefit}</span>
                       </div>
                     ))}
                   </div>
@@ -327,9 +396,32 @@ export default function JobDetailPage() {
                   <CardTitle>How to Apply</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                    {job.details.job.applicationProcess}
-                  </p>
+                  <div className="text-gray-700 leading-relaxed">
+                    <div className="max-h-32 overflow-hidden relative group">
+                      <p className="whitespace-pre-line break-words">
+                        {job.details.job.applicationProcess}
+                      </p>
+                      {job.details.job.applicationProcess.length > 200 && (
+                        <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-transparent group-hover:opacity-0 transition-opacity"></div>
+                      )}
+                    </div>
+                    {job.details.job.applicationProcess.length > 200 && (
+                      <button 
+                        className="text-orange-600 hover:text-orange-700 text-sm font-medium mt-2 focus:outline-none"
+                        onClick={(e) => {
+                          const target = e.target as HTMLElement;
+                          const container = target.closest('.text-gray-700')?.querySelector('.max-h-32');
+                          if (container) {
+                            container.classList.toggle('max-h-32');
+                            container.classList.toggle('max-h-none');
+                            target.textContent = container.classList.contains('max-h-32') ? 'Show more' : 'Show less';
+                          }
+                        }}
+                      >
+                        Show more
+                      </button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -345,22 +437,22 @@ export default function JobDetailPage() {
                 <div className="space-y-3 mb-6">
                   {job.details?.job?.applicationDeadline && (
                     <div className="flex items-center text-sm text-gray-600">
-                      <Clock className="h-4 w-4 mr-2" />
-                      Deadline: {formatDate(job.details.job.applicationDeadline)}
+                      <Clock className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="break-words">Deadline: {formatDate(job.details.job.applicationDeadline)}</span>
                     </div>
                   )}
                   
                   {job.details?.job?.experienceLevel && (
                     <div className="flex items-center text-sm text-gray-600">
-                      <Users className="h-4 w-4 mr-2" />
-                      {job.details.job.experienceLevel} level
+                      <Users className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="break-words">{job.details.job.experienceLevel} level</span>
                     </div>
                   )}
                   
                   {job.details?.job?.workLocation && (
                     <div className="flex items-center text-sm text-gray-600">
-                      <MapPin className="h-4 w-4 mr-2" />
-                      {job.details.job.workLocation}
+                      <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="break-words">{job.details.job.workLocation}</span>
                     </div>
                   )}
                 </div>
@@ -395,21 +487,23 @@ export default function JobDetailPage() {
                 <CardContent className="space-y-3">
                   {job.details.job.company && (
                     <div>
-                      <div className="font-medium text-gray-900">{job.details.job.company}</div>
+                      <div className="font-medium text-gray-900 break-words leading-tight">
+                        {job.details.job.company}
+                      </div>
                     </div>
                   )}
                   
                   {job.details.job.companySize && (
                     <div className="flex items-center text-sm text-gray-600">
-                      <Users className="h-4 w-4 mr-2" />
-                      {job.details.job.companySize}
+                      <Users className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="break-words">{job.details.job.companySize}</span>
                     </div>
                   )}
                   
                   {job.details.job.department && (
                     <div className="flex items-center text-sm text-gray-600">
-                      <Building className="h-4 w-4 mr-2" />
-                      {job.details.job.department} Department
+                      <Building className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="break-words">{job.details.job.department} Department</span>
                     </div>
                   )}
                 </CardContent>
