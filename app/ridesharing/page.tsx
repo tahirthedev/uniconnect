@@ -47,8 +47,8 @@ export default function RidesharingPage() {
   const locationData = useLocationData();
   const { toast } = useToast();
   
-  // Use PostsContext for ridesharing posts
-  const { posts: ridesharingPosts, loading, error } = usePostsByCategory('ridesharing');
+  // Use PostsContext for ridesharing posts (pick-drop category includes ridesharing)
+  const { posts: ridesharingPosts, loading, error } = usePostsByCategory('pick-drop');
   const { updatePost } = usePosts();
   
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
