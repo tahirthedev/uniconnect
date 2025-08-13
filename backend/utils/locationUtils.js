@@ -6,6 +6,115 @@ const { findCity, getNearbyCities, calculateDistance } = require('./ukCities');
  */
 
 /**
+ * Reverse geocode coordinates to get location information
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
+ * @returns {Promise<Object>} - Location information with city, country, etc.
+ */
+async function reverseGeocode(lat, lng) {
+  try {
+    console.log(`🔍 Reverse geocoding coordinates: ${lat}, ${lng}`);
+    
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`,
+      {
+        headers: {
+          'User-Agent': 'UniConnect/1.0 (contact@saydone.net)'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`OpenStreetMap API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('🗺️  OpenStreetMap response:', JSON.stringify(data, null, 2));
+
+    if (!data || !data.address) {
+      console.log('❌ No address data found in response');
+      return {
+        city: 'Unknown City',
+        country: 'Unknown Country',
+        fullAddress: 'Location not found',
+        raw: data
+      };
+    }
+
+    const address = data.address;
+    
+    // Enhanced city name extraction with comprehensive fallback hierarchy
+    let city = null;
+    
+    // Priority order for city name extraction
+    const cityFields = [
+      'city',
+      'town', 
+      'village',
+      'municipality',
+      'borough',
+      'district',
+      'neighbourhood',
+      'suburb',
+      'hamlet',
+      'county',
+      'state_district',
+      'state'
+    ];
+
+    // Find the first available city field
+    for (const field of cityFields) {
+      if (address[field] && address[field].trim()) {
+        city = address[field].trim();
+        console.log(`✅ Found city using field '${field}': ${city}`);
+        break;
+      }
+    }
+
+    // If still no city found, try extracting from display_name
+    if (!city && data.display_name) {
+      const parts = data.display_name.split(',').map(part => part.trim());
+      // Take the first non-numeric part as potential city
+      for (const part of parts) {
+        if (part && !/^\d+$/.test(part) && part.length > 1) {
+          city = part;
+          console.log(`✅ Extracted city from display_name: ${city}`);
+          break;
+        }
+      }
+    }
+
+    // Final fallback
+    if (!city) {
+      city = 'Unknown City';
+      console.log('❌ No city found, using fallback');
+    }
+
+    const result = {
+      city: city,
+      country: address.country || 'Unknown Country',
+      countryCode: address.country_code || null,
+      state: address.state || address.county || null,
+      postcode: address.postcode || null,
+      fullAddress: data.display_name || 'Address not available',
+      raw: data
+    };
+
+    console.log('🎯 Final location result:', result);
+    return result;
+
+  } catch (error) {
+    console.error('❌ Reverse geocoding error:', error);
+    return {
+      city: 'Unknown City',
+      country: 'Unknown Country',
+      fullAddress: 'Error retrieving location',
+      error: error.message
+    };
+  }
+}
+
+/**
  * Build smart location query for accommodation posts
  * @param {Object} params - Search parameters
  * @param {string} params.category - Post category
@@ -328,5 +437,6 @@ module.exports = {
   buildStandardLocationQuery,
   addLocationMetadata,
   sortByLocationRelevance,
-  calculateLocationQuality
+  calculateLocationQuality,
+  reverseGeocode
 };

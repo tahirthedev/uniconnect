@@ -9,6 +9,7 @@ const session = require('express-session');
 // Import configurations
 const connectDB = require('./config/database');
 const passport = require('./config/passport');
+const { reverseGeocode } = require('./utils/locationUtils');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -103,46 +104,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Temporary admin setup endpoint (remove after use)
-app.get('/setup-admin/:email', async (req, res) => {
-  try {
-    const User = require('./models/User');
-    const { email } = req.params;
-    
-    // Update user role to admin
-    const user = await User.findOneAndUpdate(
-      { email: email },
-      { role: 'admin' },
-      { new: true, select: '-password' }
-    );
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found with email: ' + email
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Admin role assigned successfully',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
-    });
-
-  } catch (error) {
-    console.error('Error setting up admin:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error: ' + error.message
-    });
-  }
-});
-
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
@@ -150,6 +111,30 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/bookings', bookingRoutes);
+
+// Location testing endpoint
+app.get('/api/test-location/:lat/:lng', async (req, res) => {
+  try {
+    const { lat, lng } = req.params;
+    console.log(`🧪 Testing location detection for coordinates: ${lat}, ${lng}`);
+    
+    const location = await reverseGeocode(parseFloat(lat), parseFloat(lng));
+    
+    res.json({
+      success: true,
+      coordinates: { lat: parseFloat(lat), lng: parseFloat(lng) },
+      location,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Location test error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Location detection failed',
+      error: error.message
+    });
+  }
+});
 
 // API documentation endpoint
 app.get('/api', (req, res) => {
