@@ -101,6 +101,46 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Temporary admin setup endpoint (remove after use)
+app.get('/setup-admin/:email', async (req, res) => {
+  try {
+    const User = require('./models/User');
+    const { email } = req.params;
+    
+    // Update user role to admin
+    const user = await User.findOneAndUpdate(
+      { email: email },
+      { role: 'admin' },
+      { new: true, select: '-password' }
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found with email: ' + email
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Admin role assigned successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    console.error('Error setting up admin:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error: ' + error.message
+    });
+  }
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
