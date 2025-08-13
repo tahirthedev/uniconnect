@@ -857,7 +857,7 @@ export default function HomePage() {
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center justify-center mb-6">
               <Image
-                src="/logo.png"
+                src="/logo-white.png"
                 alt="SayDone Logo"
                 width={64}
                 height={64}
@@ -922,7 +922,7 @@ export default function HomePage() {
               </p>
               <div className="flex items-center space-x-3 animate-float mb-6">
                 <Image
-                  src="/logo.png"
+                  src="/logo-white.png"
                   alt="SayDone Logo"
                   width={32}
                   height={32}
