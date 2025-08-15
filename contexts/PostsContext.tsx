@@ -381,9 +381,100 @@ export function usePostsWithFilters(filters: {
   priceMax?: number;
   search?: string;
 }) {
-  const { getPostsWithFilters, loading, error } = usePosts();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const locationData = useLocationData();
+
+  useEffect(() => {
+    const fetchFilteredPosts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Build query parameters - use getPosts method which already exists
+        const params: any = {};
+        
+        if (filters.category) {
+          // Handle rides category - map pick-drop to include both ridesharing and pick-drop
+          if (filters.category === 'pick-drop') {
+            // Don't set category param, we'll filter client-side for rides
+          } else {
+            params.category = filters.category;
+          }
+        }
+        if (filters.city && filters.city !== 'all') params.city = filters.city;
+        if (filters.priceMin) params.priceMin = filters.priceMin;
+        if (filters.priceMax) params.priceMax = filters.priceMax;
+        if (filters.search) params.search = filters.search;
+        
+        // Add location parameters if available
+        if (locationData.lat && locationData.lng) {
+          params.latitude = locationData.lat;
+          params.longitude = locationData.lng;
+          params.radius = locationData.radius || 20;
+        }
+
+        const response = await apiClient.getPosts(params);
+        
+        if (response.success) {
+          let filteredPosts = response.posts || [];
+          
+          // Apply client-side filtering for rides category
+          if (filters.category === 'pick-drop') {
+            filteredPosts = filteredPosts.filter((post: Post) => 
+              post.category === 'pick-drop' || post.category === 'ridesharing'
+            );
+          }
+          
+          setPosts(filteredPosts);
+        } else {
+          setError(response.error || 'Failed to fetch posts');
+        }
+      } catch (err) {
+        console.error('Error fetching filtered posts:', err);
+        setError('Failed to fetch posts');
+        // Fallback to client-side filtering
+        const { allPosts } = usePosts();
+        let filtered = [...allPosts];
+
+        // Apply client-side filters as fallback
+        if (filters.category && filters.category !== 'all') {
+          if (filters.category === 'pick-drop') {
+            // For rides, include both pick-drop and ridesharing
+            filtered = filtered.filter((post: Post) => 
+              post.category === 'pick-drop' || post.category === 'ridesharing'
+            );
+          } else {
+            filtered = filtered.filter((post: Post) => post.category === filters.category);
+          }
+        }
+
+        if (filters.city && filters.city !== 'all') {
+          filtered = filtered.filter((post: Post) => 
+            post.location.city.toLowerCase() === filters.city!.toLowerCase()
+          );
+        }
+
+        if (filters.search) {
+          const searchTerm = filters.search.toLowerCase();
+          filtered = filtered.filter((post: Post) =>
+            post.title.toLowerCase().includes(searchTerm) ||
+            post.description.toLowerCase().includes(searchTerm)
+          );
+        }
+
+        setPosts(filtered);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFilteredPosts();
+  }, [filters.category, filters.city, filters.priceMin, filters.priceMax, filters.search, locationData.lat, locationData.lng, locationData.radius]);
+
   return {
-    posts: getPostsWithFilters(filters),
+    posts,
     loading,
     error
   };

@@ -426,14 +426,14 @@ export default function HomePage() {
                         <div className="relative">
                           <div className="absolute top-4 left-4 z-10">
                             <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold text-white ${
-                              post.category === 'pick-drop' ? 'bg-blue-500' :
+                              post.category === 'pick-drop' || post.category === 'ridesharing' ? 'bg-blue-500' :
                               post.category === 'accommodation' ? 'bg-green-500' :
                               post.category === 'jobs' ? 'bg-purple-500' :
                               post.category === 'buy-sell' ? 'bg-pink-500' :
                               post.category === 'currency-exchange' ? 'bg-yellow-500' :
                               'bg-gray-500'
                             }`}>
-                              {post.category === 'pick-drop' && <Car className="h-3 w-3" />}
+                              {(post.category === 'pick-drop' || post.category === 'ridesharing') && <Car className="h-3 w-3" />}
                               {post.category === 'accommodation' && <Home className="h-3 w-3" />}
                               {post.category === 'jobs' && <Briefcase className="h-3 w-3" />}
                               {post.category === 'buy-sell' && <ShoppingBag className="h-3 w-3" />}
