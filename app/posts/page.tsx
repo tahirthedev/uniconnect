@@ -66,8 +66,48 @@ export default function PostsPage() {
     city: filters.city === 'all' ? undefined : filters.city
   });
   
-  // Get available cities from ALL posts
-  const availableCities = Array.from(new Set(allPosts.map(post => post.location.city))).sort();
+  // City name normalization functions (same as homepage)
+  const normalizeCity = (city: string): string => {
+    if (!city || typeof city !== 'string') return '';
+    return city.trim()
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  const extractCityFromPost = (post: any): string | null => {
+    // Prioritize the city field
+    if (post.location?.city) {
+      const city = post.location.city.trim();
+      // Ignore generic address descriptions
+      if (city.length < 50 && !city.toLowerCase().includes('location in')) {
+        return normalizeCity(city);
+      }
+    }
+    
+    // Fallback to address parsing only if city field is missing
+    if (!post.location?.city && post.location?.address) {
+      const address = post.location.address.trim();
+      // Parse comma-separated address (e.g., "123 Street, London, UK")
+      const parts = address.split(',').map((part: string) => part.trim());
+      if (parts.length >= 2) {
+        const potentialCity = parts[1]; // Usually the city is the second part
+        if (potentialCity.length < 50 && !potentialCity.toLowerCase().includes('location in')) {
+          return normalizeCity(potentialCity);
+        }
+      }
+    }
+    
+    return null;
+  };
+  
+  // Get available cities from ALL posts with normalization
+  const availableCities = Array.from(new Set(
+    allPosts
+      .map(extractCityFromPost)
+      .filter((city): city is string => city !== null && city.length > 0)
+  )).sort();
   
   // Category configuration
   const categories = [
