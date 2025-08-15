@@ -3,6 +3,101 @@ const User = require('../models/User');
 const { UserActivity } = require('../models/Analytics');
 const { detectFlaggedContent, shouldAutoFlag } = require('../utils/moderation');
 const { buildLocationQuery, addLocationMetadata, sortByLocationRelevance } = require('../utils/locationUtils');
+const { buildEnhancedSearchQuery, extractCategoryFromSearch, CATEGORY_MAPPINGS } = require('../utils/searchUtils');
+
+// Calculate relevance score for search results
+function calculateRelevanceScore(post, searchTerms, originalSearch) {
+  let score = 0;
+  const title = post.title.toLowerCase();
+  const description = post.description.toLowerCase();
+  const category = post.category;
+  const city = post.location.city.toLowerCase();
+  const originalLower = originalSearch.toLowerCase();
+
+  // PRIORITY 1: Category matching (highest weight) - greatly increased
+  const categoryWords = searchTerms.filter(term => CATEGORY_MAPPINGS[term.toLowerCase()]);
+  if (categoryWords.length > 0) {
+    const expectedCategory = CATEGORY_MAPPINGS[categoryWords[0].toLowerCase()];
+    if (category === expectedCategory || 
+        (expectedCategory === 'pick-drop' && category === 'ridesharing')) {
+      score += 5000; // Very high score for correct category
+    }
+  }
+
+  // PRIORITY 2: Direct category match for ridesharing/pick-drop
+  if ((category === 'ridesharing' || category === 'pick-drop') && 
+      (originalLower.includes('ride') || originalLower.includes('lift') || originalLower.includes('car'))) {
+    score += 3000; // High bonus for ride-related searches matching ride categories
+  }
+
+  // PRIORITY 3: Title matches (high weight)
+  if (title.includes(originalLower)) {
+    score += 500; // Full phrase in title
+  }
+  
+  searchTerms.forEach(term => {
+    const termLower = term.toLowerCase();
+    if (title.includes(termLower)) {
+      score += 200; // Individual words in title
+    }
+    if (title.startsWith(termLower)) {
+      score += 100; // Word at start of title
+    }
+  });
+
+  // PRIORITY 4: Description matches (medium weight)  
+  if (description.includes(originalLower)) {
+    score += 150; // Full phrase in description
+  }
+  
+  searchTerms.forEach(term => {
+    const termLower = term.toLowerCase();
+    if (description.includes(termLower)) {
+      score += 50; // Individual words in description
+    }
+  });
+
+  // PRIORITY 5: Location matches (much lower weight for location-only matches)
+  // But penalize wrong category + location matches
+  searchTerms.forEach(term => {
+    const termLower = term.toLowerCase();
+    if (city.includes(termLower)) {
+      // If this is a location match but wrong category for the search intent
+      const categoryWords = searchTerms.filter(searchTerm => CATEGORY_MAPPINGS[searchTerm.toLowerCase()]);
+      if (categoryWords.length > 0) {
+        const expectedCategory = CATEGORY_MAPPINGS[categoryWords[0].toLowerCase()];
+        if (category !== expectedCategory && 
+            !(expectedCategory === 'pick-drop' && category === 'ridesharing')) {
+          score += 5; // Very low score for wrong category but location match
+        } else {
+          score += 100; // Good score for correct category + location
+        }
+      } else {
+        score += 30; // Normal location match
+      }
+    }
+  });
+
+  // PRIORITY 6: Penalty for accommodation when searching for rides
+  if ((originalLower.includes('ride') || originalLower.includes('lift') || originalLower.includes('car')) && 
+      category === 'accommodation') {
+    score -= 1000; // Significant penalty for accommodation posts in ride searches
+  }
+
+  // PRIORITY 7: Penalty for jobs when searching for accommodation terms
+  if ((originalLower.includes('house') || originalLower.includes('flat') || originalLower.includes('apartment')) && 
+      category === 'jobs') {
+    score -= 1000; // Significant penalty for job posts in accommodation searches
+  }
+
+  // BONUS: Recent posts get slight boost
+  const daysSinceCreated = (Date.now() - new Date(post.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+  if (daysSinceCreated < 7) {
+    score += 10; // Recent posts bonus
+  }
+
+  return Math.max(0, score); // Ensure score never goes negative
+}
 
 // Create a new post
 const createPost = async (req, res) => {
@@ -123,13 +218,12 @@ const getPosts = async (req, res) => {
       if (priceMax) baseFilters['price.amount'].$lte = parseFloat(priceMax);
     }
 
-    // Apply search filter
+    // Apply enhanced search filter using the new search utility
+    let searchTerms = null;
     if (search && search.trim()) {
-      baseFilters.$or = [
-        { title: { $regex: search.trim(), $options: 'i' } },
-        { description: { $regex: search.trim(), $options: 'i' } },
-        { tags: { $in: [new RegExp(search.trim(), 'i')] } }
-      ];
+      searchTerms = search.trim().split(/\s+/).filter(word => word.length > 2);
+      const enhancedQuery = buildEnhancedSearchQuery(search, baseFilters);
+      Object.assign(baseFilters, enhancedQuery);
     }
 
     // Combine base filters with location query
@@ -181,6 +275,28 @@ const getPosts = async (req, res) => {
       isLiked: req.user ? post.likes?.includes(req.user._id) : false,
       likes: undefined // Remove the likes array from response
     }));
+
+    // Apply smart relevance sorting for search results
+    if (search && searchTerms && searchTerms.length > 0) {
+      enhancedPosts = enhancedPosts.map(post => ({
+        ...post,
+        relevanceScore: calculateRelevanceScore(post, searchTerms, search)
+      }));
+
+      // Sort by relevance score (highest first), then by date
+      enhancedPosts.sort((a, b) => {
+        if (b.relevanceScore !== a.relevanceScore) {
+          return b.relevanceScore - a.relevanceScore;
+        }
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+
+      // Remove relevance score from final response
+      enhancedPosts = enhancedPosts.map(post => {
+        const { relevanceScore, ...postWithoutScore } = post;
+        return postWithoutScore;
+      });
+    }
 
     // Add location metadata and sort by location relevance if requested
     const userLocation = lat && lng ? { lat: parseFloat(lat), lng: parseFloat(lng) } : null;
@@ -508,9 +624,11 @@ const searchPosts = async (req, res) => {
       expiresAt: { $gt: new Date() }
     };
 
-    // Text search
+    // Enhanced text search
     if (q) {
-      filters.$text = { $search: q };
+      // Use enhanced search for better results
+      const enhancedQuery = buildEnhancedSearchQuery(q, filters);
+      Object.assign(filters, enhancedQuery);
     }
 
     // Apply other filters
