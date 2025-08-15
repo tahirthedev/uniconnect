@@ -22,6 +22,7 @@ interface PropertyListing {
   // Step 2: Property Details
   details: {
     address: string;
+    city: string; // Add separate city field
     unitNumber: string;
     availability: {
       from: string;
@@ -77,6 +78,7 @@ const initialData: PropertyListing = {
   type: '',
   details: {
     address: '',
+    city: '', // Add city field to initial data
     unitNumber: '',
     availability: {
       from: '',
@@ -148,11 +150,10 @@ export default function ListingWizard() {
     try {
       // Transform wizard data to match your Post model
       const addressParts = formData.details.address.split(',').map(part => part.trim());
-      const city = addressParts.length > 1 ? addressParts[1] : addressParts[0] || 'Unknown City';
       
       const postData = {
         category: 'accommodation',
-        title: `${formData.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} - ${formData.details.address}`,
+        title: `${formData.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} - ${formData.details.city || 'Unknown City'}`,
         content: formData.description,
         description: formData.description, // Backend requires this field
         price: {
@@ -162,9 +163,9 @@ export default function ListingWizard() {
         },
         location: {
           address: formData.details.address,
-          city: city,
+          city: formData.details.city || (addressParts.length > 1 ? addressParts[1] : ''),
           state: addressParts.length > 2 ? addressParts[2] : '',
-          country: 'US'
+          country: 'UK' // Changed to UK since this is for UK students
         },
         details: {
           accommodation: {
@@ -250,6 +251,7 @@ export default function ListingWizard() {
           <PropertyDetailsStep
             data={formData}
             updateData={updateFormData}
+            onNextStep={nextStep}
           />
         );
       case 3:

@@ -1,18 +1,49 @@
 'use client';
 
-import { useState } from 'react';
-import { MapPin, Calendar, Users, Home, DollarSign, Calculator } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MapPin, Calendar, Users, Home, DollarSign, Calculator, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface PropertyDetailsStepProps {
   data: any;
   updateData: (updates: any) => void;
+  onNextStep?: () => void;
 }
 
-export default function PropertyDetailsStep({ data, updateData }: PropertyDetailsStepProps) {
+export default function PropertyDetailsStep({ data, updateData, onNextStep }: PropertyDetailsStepProps) {
   const [activeSection, setActiveSection] = useState('location');
+  const [completedSections, setCompletedSections] = useState<string[]>([]);
+
+  // Check section completion
+  const checkSectionCompletion = (sectionId: string): boolean => {
+    switch (sectionId) {
+      case 'location':
+        return !!(data.details.address && data.details.city);
+      case 'availability':
+        return !!(data.details.availability.from && data.details.tenure);
+      case 'capacity':
+        return !!(data.details.capacity > 0 && data.details.bedrooms > 0 && data.details.bathrooms > 0);
+      case 'pricing':
+        return !!(data.pricing.rent > 0 && data.pricing.deposit >= 0);
+      default:
+        return false;
+    }
+  };
+
+  // Update completed sections when data changes
+  useEffect(() => {
+    const completed = sections.filter(section => checkSectionCompletion(section.id));
+    setCompletedSections(completed.map(s => s.id));
+  }, [data]);
+
+  // Get next incomplete section
+  const getNextIncompleteSection = (): string | null => {
+    const incomplete = sections.find(section => !checkSectionCompletion(section.id));
+    return incomplete?.id || null;
+  };
 
   const handleDetailsUpdate = (field: string, value: any) => {
     updateData({
@@ -33,10 +64,10 @@ export default function PropertyDetailsStep({ data, updateData }: PropertyDetail
   };
 
   const sections = [
-    { id: 'location', title: 'Location', icon: MapPin },
-    { id: 'availability', title: 'Availability', icon: Calendar },
-    { id: 'capacity', title: 'Capacity & Size', icon: Users },
-    { id: 'pricing', title: 'Pricing', icon: DollarSign },
+    { id: 'location', title: 'Location', icon: MapPin, required: true },
+    { id: 'availability', title: 'Availability', icon: Calendar, required: true },
+    { id: 'capacity', title: 'Capacity & Size', icon: Users, required: true },
+    { id: 'pricing', title: 'Pricing', icon: DollarSign, required: true },
   ];
 
   return (
@@ -46,24 +77,90 @@ export default function PropertyDetailsStep({ data, updateData }: PropertyDetail
           Property Details & Pricing
         </h2>
         <p className="text-gray-600">
-          Provide detailed information about your property
+          Provide detailed information about your property. Complete all sections to proceed.
         </p>
+        
+        {/* Progress Indicator */}
+        <div className="mt-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium text-orange-800">
+              Progress: {completedSections.length} of {sections.length} sections completed
+            </span>
+            <Badge variant={completedSections.length === sections.length ? "default" : "secondary"}>
+              {completedSections.length === sections.length ? "All Complete!" : "In Progress"}
+            </Badge>
+          </div>
+          <div className="mt-2 w-full bg-orange-100 rounded-full h-2">
+            <div 
+              className="bg-orange-500 h-2 rounded-full transition-all duration-300" 
+              style={{ width: `${(completedSections.length / sections.length) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Next Steps Alert */}
+        {completedSections.length > 0 && completedSections.length < sections.length && (
+          <Alert className="mt-4 border-blue-200 bg-blue-50">
+            <AlertCircle className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800">
+              <strong>Next:</strong> Complete the remaining sections, then proceed to the{' '}
+              <span className="font-semibold">Amenities</span> step to continue your listing.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {completedSections.length === sections.length && (
+          <Alert className="mt-4 border-green-200 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800 flex items-center justify-between">
+              <span>
+                <strong>Great!</strong> All property details completed. Ready to move to the next step?
+              </span>
+              <Button 
+                size="sm" 
+                className="ml-4 bg-green-600 hover:bg-green-700"
+                onClick={() => {
+                  if (onNextStep) {
+                    onNextStep();
+                  }
+                }}
+              >
+                Continue to Amenities <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
 
       {/* Section Navigation */}
       <div className="flex flex-wrap gap-2 mb-6">
         {sections.map((section) => {
           const Icon = section.icon;
+          const isCompleted = completedSections.includes(section.id);
+          const isActive = activeSection === section.id;
+          
           return (
             <Button
               key={section.id}
-              variant={activeSection === section.id ? 'default' : 'outline'}
+              variant={isActive ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveSection(section.id)}
-              className={activeSection === section.id ? 'bg-orange-600 hover:bg-orange-700' : ''}
+              className={`relative ${
+                isActive 
+                  ? 'bg-orange-600 hover:bg-orange-700' 
+                  : isCompleted 
+                    ? 'border-green-500 text-green-700 hover:bg-green-50' 
+                    : ''
+              }`}
             >
               <Icon className="h-4 w-4 mr-2" />
               {section.title}
+              {isCompleted && (
+                <CheckCircle className="h-3 w-3 ml-2 text-green-600" />
+              )}
+              {section.required && !isCompleted && (
+                <span className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+              )}
             </Button>
           );
         })}
@@ -84,12 +181,31 @@ export default function PropertyDetailsStep({ data, updateData }: PropertyDetail
                 Full Address *
               </label>
               <textarea
-                placeholder="Enter the complete address including postcode"
+                placeholder="Enter the complete address including postcode (e.g., 123 Oxford Street, Manchester M1 4PD)"
                 value={data.details.address}
                 onChange={(e) => handleDetailsUpdate('address', e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 rows={3}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                This will be used for precise location mapping
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                City *
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., Manchester, Birmingham, Leeds"
+                value={data.details.city}
+                onChange={(e) => handleDetailsUpdate('city', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                This will be displayed publicly and used for search filtering
+              </p>
             </div>
             
             <div>
@@ -104,6 +220,26 @@ export default function PropertyDetailsStep({ data, updateData }: PropertyDetail
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               />
             </div>
+            
+            {/* Section Completion Prompt */}
+            {checkSectionCompletion('location') && (
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-800">Location details completed!</span>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setActiveSection('availability')}
+                    className="border-green-300 text-green-700 hover:bg-green-100"
+                  >
+                    Next: Availability <ArrowRight className="h-3 w-3 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -156,7 +292,7 @@ export default function PropertyDetailsStep({ data, updateData }: PropertyDetail
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Minimum Tenure
+                Minimum Tenure *
               </label>
               <select
                 value={data.details.tenure}
@@ -171,6 +307,26 @@ export default function PropertyDetailsStep({ data, updateData }: PropertyDetail
                 <option value="academic year">Academic year</option>
               </select>
             </div>
+            
+            {/* Section Completion Prompt */}
+            {checkSectionCompletion('availability') && (
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-800">Availability details completed!</span>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setActiveSection('capacity')}
+                    className="border-green-300 text-green-700 hover:bg-green-100"
+                  >
+                    Next: Capacity & Size <ArrowRight className="h-3 w-3 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -239,6 +395,26 @@ export default function PropertyDetailsStep({ data, updateData }: PropertyDetail
                 />
               </div>
             </div>
+            
+            {/* Section Completion Prompt */}
+            {checkSectionCompletion('capacity') && (
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-800">Capacity details completed!</span>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setActiveSection('pricing')}
+                    className="border-green-300 text-green-700 hover:bg-green-100"
+                  >
+                    Next: Pricing <ArrowRight className="h-3 w-3 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -338,6 +514,16 @@ export default function PropertyDetailsStep({ data, updateData }: PropertyDetail
                     <span>Total Move-in Cost:</span>
                     <span className="font-semibold">£{data.pricing.rent + data.pricing.deposit}</span>
                   </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Section Completion Prompt */}
+            {checkSectionCompletion('pricing') && (
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">Pricing details completed!</span>
                 </div>
               </div>
             )}
