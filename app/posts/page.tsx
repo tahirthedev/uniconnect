@@ -71,12 +71,12 @@ export default function PostsPage() {
   
   // Category configuration
   const categories = [
-    { id: 'all', label: 'All Categories', icon: TrendingUp, color: 'bg-gray-500' },
-    { id: 'pick-drop', label: 'Rides', icon: Car, color: 'bg-blue-500' },
-    { id: 'accommodation', label: 'Housing', icon: Home, color: 'bg-green-500' },
-    { id: 'jobs', label: 'Jobs', icon: Briefcase, color: 'bg-purple-500' },
-    { id: 'buy-sell', label: 'Marketplace', icon: ShoppingBag, color: 'bg-pink-500' },
-    { id: 'currency-exchange', label: 'Currency', icon: DollarSign, color: 'bg-yellow-500' },
+    { id: 'all', label: 'All Categories', icon: TrendingUp, color: 'bg-gray-500', enabled: true },
+    { id: 'pick-drop', label: 'Rides', icon: Car, color: 'bg-blue-500', enabled: true },
+    { id: 'accommodation', label: 'Housing', icon: Home, color: 'bg-green-500', enabled: true },
+    { id: 'jobs', label: 'Jobs', icon: Briefcase, color: 'bg-purple-500', enabled: true },
+    { id: 'buy-sell', label: 'Marketplace (Soon)', icon: ShoppingBag, color: 'bg-pink-500', enabled: false },
+    { id: 'currency-exchange', label: 'Currency (Soon)', icon: DollarSign, color: 'bg-yellow-500', enabled: false },
   ];
   
   const [locationBased, setLocationBased] = useState(false);
@@ -100,6 +100,11 @@ export default function PostsPage() {
 
   const handleCategoryChange = (categoryId: string) => {
     if (filters.category === categoryId) return;
+    
+    // Find the category to check if it's enabled
+    const category = categories.find(cat => cat.id === categoryId);
+    if (!category?.enabled) return; // Don't allow selection of disabled categories
+    
     setFilters(prev => ({ ...prev, category: categoryId === 'all' ? '' : categoryId }));
   };
 
@@ -179,15 +184,19 @@ export default function PostsPage() {
                 {categories.map((category) => {
                   const IconComponent = category.icon;
                   const isActive = (category.id === 'all' && filters.category === '') || filters.category === category.id;
+                  const isDisabled = !category.enabled;
                   
                   return (
                     <button
                       key={category.id}
                       onClick={() => handleCategoryChange(category.id)}
-                      className={`flex items-center gap-3 px-6 py-3 rounded-full font-semibold transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg ${
-                        isActive
+                      disabled={isDisabled}
+                      className={`flex items-center gap-3 px-6 py-3 rounded-full font-semibold transition-all duration-200 transform shadow-md ${
+                        isDisabled
+                          ? 'bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed opacity-60'
+                          : isActive
                           ? 'bg-orange-500 text-white shadow-lg scale-105'
-                          : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-orange-300 hover:text-orange-600'
+                          : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-orange-300 hover:text-orange-600 hover:scale-105 hover:shadow-lg'
                       }`}
                     >
                       <IconComponent className="h-5 w-5" />

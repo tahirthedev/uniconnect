@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ChevronDown, ChevronRight, Star, MapPin, Briefcase, Home, MessageCircle, Shield, Users, Clock, ArrowRight, GraduationCap, BookOpen, Coffee, Zap, Heart, Twitter, Instagram, Linkedin, Mail, Search, Car, Building, DollarSign, ShoppingBag, TrendingUp, Smartphone, Bell } from 'lucide-react'
+import { ChevronDown, ChevronRight, Star, MapPin, Briefcase, Home, MessageCircle, Shield, Users, Clock, ArrowRight, GraduationCap, BookOpen, Coffee, Zap, Heart, Twitter, Instagram, Linkedin, Mail, Search, Car, Building, DollarSign, ShoppingBag, TrendingUp, Smartphone, Bell, MessageSquare } from 'lucide-react'
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from 'next/navigation'
@@ -52,13 +52,32 @@ export default function HomePage() {
 
   // Category configuration with better colors and icons
   const categories = [
-    { id: 'all', label: 'All', icon: TrendingUp, color: 'bg-gray-500', hoverColor: 'hover:bg-gray-600' },
-    { id: 'pick-drop', label: 'Rides', icon: Car, color: 'bg-blue-500', hoverColor: 'hover:bg-blue-600' },
-    { id: 'accommodation', label: 'Housing', icon: Home, color: 'bg-green-500', hoverColor: 'hover:bg-green-600' },
-    { id: 'jobs', label: 'Jobs', icon: Briefcase, color: 'bg-purple-500', hoverColor: 'hover:bg-purple-600' },
-    { id: 'buy-sell', label: 'Marketplace', icon: ShoppingBag, color: 'bg-pink-500', hoverColor: 'hover:bg-pink-600' },
-    { id: 'currency-exchange', label: 'Currency', icon: DollarSign, color: 'bg-yellow-500', hoverColor: 'hover:bg-yellow-600' },
+    { id: 'all', label: 'All', icon: TrendingUp, color: 'bg-gray-500', hoverColor: 'hover:bg-gray-600', enabled: true },
+    { id: 'pick-drop', label: 'Rides', icon: Car, color: 'bg-blue-500', hoverColor: 'hover:bg-blue-600', enabled: true },
+    { id: 'accommodation', label: 'Housing', icon: Home, color: 'bg-green-500', hoverColor: 'hover:bg-green-600', enabled: true },
+    { id: 'jobs', label: 'Jobs', icon: Briefcase, color: 'bg-purple-500', hoverColor: 'hover:bg-purple-600', enabled: true },
+    { id: 'buy-sell', label: 'Marketplace', icon: ShoppingBag, color: 'bg-gray-400', hoverColor: 'hover:bg-gray-400', enabled: false },
+    { id: 'currency-exchange', label: 'Currency', icon: DollarSign, color: 'bg-gray-400', hoverColor: 'hover:bg-gray-400', enabled: false },
   ]
+
+  // Get category icon and color for post cards
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'accommodation':
+        return { icon: Home, color: 'text-green-500', bgColor: 'bg-green-100' };
+      case 'pick-drop':
+      case 'ridesharing':
+        return { icon: Car, color: 'text-blue-500', bgColor: 'bg-blue-100' };
+      case 'jobs':
+        return { icon: Briefcase, color: 'text-purple-500', bgColor: 'bg-purple-100' };
+      case 'buy-sell':
+        return { icon: ShoppingBag, color: 'text-pink-500', bgColor: 'bg-pink-100' };
+      case 'currency-exchange':
+        return { icon: DollarSign, color: 'text-yellow-500', bgColor: 'bg-yellow-100' };
+      default:
+        return { icon: TrendingUp, color: 'text-gray-500', bgColor: 'bg-gray-100' };
+    }
+  };
 
   const handleCardClick = (href: string) => {
     router.push(href)
@@ -297,19 +316,24 @@ export default function HomePage() {
                   {categories.map((category) => {
                     const IconComponent = category.icon
                     const isActive = selectedCategory === category.id
+                    const isDisabled = !category.enabled
                     
                     return (
                       <button
                         key={category.id}
-                        onClick={() => handleCategoryChange(category.id)}
-                        className={`flex items-center gap-3 px-6 py-3 rounded-full font-semibold transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg ${
-                          isActive
+                        onClick={() => category.enabled && handleCategoryChange(category.id)}
+                        disabled={isDisabled}
+                        className={`flex items-center gap-3 px-6 py-3 rounded-full font-semibold transition-all duration-200 shadow-md ${
+                          isDisabled
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
+                            : isActive
                             ? 'bg-orange-500 text-white shadow-lg scale-105'
-                            : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-orange-300 hover:text-orange-600'
+                            : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-orange-300 hover:text-orange-600 transform hover:scale-105 hover:shadow-lg'
                         }`}
                       >
                         <IconComponent className="h-5 w-5" />
                         <span className="text-sm font-medium">{category.label}</span>
+                        {isDisabled && <span className="text-xs ml-1">(Soon)</span>}
                       </button>
                     )
                   })}
@@ -418,9 +442,13 @@ export default function HomePage() {
                             </div>
                           </div>
                           
-                          {/* Gradient Overlay */}
-                          <div className="h-32 bg-gradient-to-br from-orange-100 to-orange-200 relative">
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                          {/* Category Icon Display */}
+                          <div className={`h-32 ${getCategoryIcon(post.category).bgColor} relative flex items-center justify-center`}>
+                            {(() => {
+                              const IconComponent = getCategoryIcon(post.category).icon;
+                              return <IconComponent className={`w-16 h-16 ${getCategoryIcon(post.category).color}`} />;
+                            })()}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
                           </div>
                         </div>
                         
@@ -893,7 +921,6 @@ export default function HomePage() {
                 <li><Link href="/jobs" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Jobs</Link></li>
                 <li><Link href="/ridesharing" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Rides</Link></li>
                 <li><Link href="/accommodation" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Accommodation</Link></li>
-                <li><Link href="/marketplace" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Marketplace</Link></li>
                 <li><Link href="/currency" className="text-gray-300 hover:text-white transition-colors transform hover:translate-x-1 duration-200 inline-block">Currency Exchange</Link></li>
               </ul>
             </div>
