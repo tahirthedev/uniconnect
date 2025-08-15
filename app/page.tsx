@@ -118,6 +118,44 @@ export default function HomePage() {
     setSelectedCity('all') // Reset city filter when changing category
   }
 
+  // Function to get the appropriate create post URL based on category
+  const getCreatePostUrl = (category: string) => {
+    switch (category) {
+      case 'accommodation':
+        return '/accommodation/list'
+      case 'pick-drop':
+      case 'ridesharing':
+        return '/ridesharing/offer'
+      case 'jobs':
+        return '/jobs/post'
+      case 'buy-sell':
+        return '/marketplace/sell' // Assuming this will be the URL when marketplace is enabled
+      case 'currency-exchange':
+        return '/currency/exchange' // Assuming this will be the URL when currency is enabled
+      default:
+        return '/posts' // Fallback to general posts page
+    }
+  }
+
+  // Function to get the appropriate listing/browse URL based on category
+  const getBrowseUrl = (category: string) => {
+    switch (category) {
+      case 'accommodation':
+        return '/accommodation'
+      case 'pick-drop':
+      case 'ridesharing':
+        return '/ridesharing'
+      case 'jobs':
+        return '/jobs'
+      case 'buy-sell':
+        return '/marketplace'
+      case 'currency-exchange':
+        return '/currency'
+      default:
+        return '/posts' // Fallback to general posts page
+    }
+  }
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     // Search is handled automatically by the PostsContext filtering
@@ -506,10 +544,13 @@ export default function HomePage() {
                 {/* View All Button */}
                 <div className="text-center mt-12">
                   <Button 
-                    onClick={() => router.push('/posts')}
+                    onClick={() => router.push(selectedCategory === 'all' ? '/posts' : getBrowseUrl(selectedCategory))}
                     className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-12 py-4 text-lg font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
                   >
-                    Explore All Posts
+                    {selectedCategory === 'all' 
+                      ? 'Explore All Posts'
+                      : `Explore All ${categories.find(c => c.id === selectedCategory)?.label}`
+                    }
                     <ArrowRight className="ml-3 h-5 w-5" />
                   </Button>
                 </div>
@@ -536,10 +577,23 @@ export default function HomePage() {
                     View All Categories
                   </Button>
                   <Button 
-                    onClick={() => router.push('/posts')}
+                    onClick={() => router.push(getCreatePostUrl(selectedCategory))}
                     className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-semibold"
                   >
-                    Create Post
+                    {selectedCategory === 'all' 
+                      ? 'Create Post' 
+                      : selectedCategory === 'accommodation'
+                        ? 'List Property'
+                        : selectedCategory === 'pick-drop' || selectedCategory === 'ridesharing'
+                          ? 'Offer Ride'
+                          : selectedCategory === 'jobs'
+                            ? 'Post Job'
+                            : selectedCategory === 'buy-sell'
+                              ? 'Sell Item'
+                              : selectedCategory === 'currency-exchange'
+                                ? 'Exchange Currency'
+                                : 'Create Post'
+                    }
                   </Button>
                 </div>
               </div>

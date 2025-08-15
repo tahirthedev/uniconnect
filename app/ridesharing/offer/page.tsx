@@ -235,7 +235,7 @@ export default function OfferRidePage() {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
       
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         {/* Header */}
         <div className="flex items-center mb-8">
           <Link href="/ridesharing" className="mr-4">
