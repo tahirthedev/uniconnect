@@ -10,6 +10,7 @@ const session = require('express-session');
 const connectDB = require('./config/database');
 const passport = require('./config/passport');
 const { reverseGeocode } = require('./utils/locationUtils');
+const Post = require('./models/Post');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -112,6 +113,95 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/bookings', bookingRoutes);
+
+// ⚠️ TEMPORARY MIGRATION ENDPOINT - REMOVE AFTER USE ⚠️
+app.get('/api/migrate-city-names', async (req, res) => {
+  try {
+    console.log('🔄 Starting city name migration...');
+    
+    // Helper function to normalize city names
+    const normalizeCity = (city) => {
+      if (!city || typeof city !== 'string') return '';
+      return city.trim()
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    };
+    
+    const posts = await Post.find({});
+    let updatedCount = 0;
+    const changes = [];
+    
+    for (const post of posts) {
+      let needsUpdate = false;
+      const updates = {};
+      
+      // Normalize city name
+      if (post.location && post.location.city) {
+        const originalCity = post.location.city;
+        const normalizedCity = normalizeCity(originalCity);
+        
+        if (originalCity !== normalizedCity) {
+          updates['location.city'] = normalizedCity;
+          needsUpdate = true;
+          changes.push({
+            postId: post._id,
+            original: originalCity,
+            normalized: normalizedCity,
+            field: 'city'
+          });
+        }
+      }
+      
+      // Normalize address if it looks like a city name (simple heuristic)
+      if (post.location && post.location.address) {
+        const address = post.location.address.trim();
+        
+        // If address looks like a simple city name (no numbers, no commas, short)
+        if (!/\d/.test(address) && !address.includes(',') && address.split(' ').length <= 3 && address.length < 50) {
+          const originalAddress = post.location.address;
+          const normalizedAddress = normalizeCity(originalAddress);
+          
+          if (originalAddress !== normalizedAddress) {
+            updates['location.address'] = normalizedAddress;
+            needsUpdate = true;
+            changes.push({
+              postId: post._id,
+              original: originalAddress,
+              normalized: normalizedAddress,
+              field: 'address'
+            });
+          }
+        }
+      }
+      
+      if (needsUpdate) {
+        await Post.findByIdAndUpdate(post._id, { $set: updates });
+        updatedCount++;
+        console.log(`✅ Updated post ${post._id}: ${JSON.stringify(updates)}`);
+      }
+    }
+    
+    console.log(`🎉 Migration completed! Updated ${updatedCount} posts.`);
+    
+    res.json({
+      success: true,
+      message: `Migration completed successfully. Updated ${updatedCount} posts.`,
+      updatedCount,
+      changes,
+      totalPosts: posts.length
+    });
+    
+  } catch (error) {
+    console.error('❌ Migration failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Migration failed',
+      error: error.message
+    });
+  }
+});
 
 // Location testing endpoint
 app.get('/api/test-location/:lat/:lng', async (req, res) => {

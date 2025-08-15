@@ -1,6 +1,13 @@
 const mongoose = require('mongoose');
 const Post = require('./models/Post');
 
+// Load environment variables if running locally
+try {
+  require('dotenv').config();
+} catch (error) {
+  // dotenv might not be available in production
+}
+
 // Normalize city names
 const normalizeCity = (city) => {
   if (!city || typeof city !== 'string') return '';
@@ -13,8 +20,17 @@ const normalizeCity = (city) => {
 
 async function fixCityNames() {
   try {
-    // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/uniconnect');
+    // Load environment variables if not in Railway environment
+    if (!process.env.RAILWAY_ENVIRONMENT) {
+      require('dotenv').config();
+    }
+    
+    // Connect to MongoDB using the environment variable
+    const mongoUri = process.env.MONGODB_URI || process.env.DATABASE_URL || 'mongodb://localhost:27017/uniconnect';
+    console.log('🔗 Connecting to MongoDB...');
+    console.log('📍 Environment:', process.env.RAILWAY_ENVIRONMENT || 'local');
+    
+    await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB');
 
     // Find all posts with location.city
