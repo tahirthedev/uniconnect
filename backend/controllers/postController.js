@@ -5,6 +5,16 @@ const { detectFlaggedContent, shouldAutoFlag } = require('../utils/moderation');
 const { buildLocationQuery, addLocationMetadata, sortByLocationRelevance } = require('../utils/locationUtils');
 const { buildEnhancedSearchQuery, extractCategoryFromSearch, CATEGORY_MAPPINGS } = require('../utils/searchUtils');
 
+// Helper function to normalize city names
+const normalizeCity = (city) => {
+  if (!city || typeof city !== 'string') return '';
+  return city.trim()
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 // Calculate relevance score for search results
 function calculateRelevanceScore(post, searchTerms, originalSearch) {
   let score = 0;
@@ -117,12 +127,18 @@ const createPost = async (req, res) => {
     // Content moderation check
     const contentAnalysis = detectFlaggedContent(`${title} ${description}`);
     
+    // Normalize city name in location
+    const normalizedLocation = { ...location };
+    if (normalizedLocation && normalizedLocation.city) {
+      normalizedLocation.city = normalizeCity(normalizedLocation.city);
+    }
+    
     const postData = {
       title,
       description,
       category,
       author: req.user._id,
-      location,
+      location: normalizedLocation,
       status: 'active'
     };
 

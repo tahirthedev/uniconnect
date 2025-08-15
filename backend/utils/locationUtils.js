@@ -5,6 +5,16 @@ const { findCity, getNearbyCities, calculateDistance } = require('./ukCities');
  * Handles various location input formats and provides intelligent fallbacks
  */
 
+// Helper function to normalize city names
+const normalizeCity = (city) => {
+  if (!city || typeof city !== 'string') return '';
+  return city.trim()
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 /**
  * Reverse geocode coordinates to get location information
  * @param {number} lat - Latitude
@@ -91,7 +101,7 @@ async function reverseGeocode(lat, lng) {
     }
 
     const result = {
-      city: city,
+      city: normalizeCity(city),
       country: address.country || 'Unknown Country',
       countryCode: address.country_code || null,
       state: address.state || address.county || null,
