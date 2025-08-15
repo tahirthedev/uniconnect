@@ -177,8 +177,13 @@ export default function JobPostingWizard() {
         return !!(formData.title && formData.title.length >= 5 && formData.experienceLevel);
       case 3:
         return !!(formData.salaryMin && formData.salaryMax);
-      case 4:
-        return !!(formData.description && formData.description.length >= 10 && formData.applicationProcess);
+      case 4: {
+        // Require description and application process. If the role is not remote,
+        // require city to be provided (make city compulsory at step 4).
+        const baseValid = !!(formData.description && formData.description.length >= 10 && formData.applicationProcess);
+        if (formData.remote) return baseValid;
+        return baseValid && !!(formData.city && formData.city.trim().length >= 2);
+      }
       case 5:
         return formData.remote || !!(formData.city && formData.city.length >= 2);
       default:
@@ -659,7 +664,7 @@ export default function JobPostingWizard() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      City
+                      City *
                     </label>
                     <input
                       type="text"
@@ -668,6 +673,9 @@ export default function JobPostingWizard() {
                       className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                       placeholder="London"
                     />
+                    {!formData.remote && (!formData.city || formData.city.trim().length < 2) && (
+                      <p className="text-red-600 text-sm mt-1">City is required for on-site roles</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
