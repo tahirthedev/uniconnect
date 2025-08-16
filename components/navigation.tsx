@@ -135,18 +135,11 @@ export default function Navigation() {
                 </Button>
               </div>
             ) : (
-              <>
-                <Link href="/auth">
-                  <Button variant="outline" className="border-orange-200 hover:bg-orange-50 hover:border-orange-300 transition-all duration-200 transform hover:scale-105">
-                    Login
-                  </Button>
-                </Link>
-                <Link href="/auth">
-                  <Button className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 transition-all duration-200 shadow-lg hover:shadow-orange-200 transform hover:scale-105">
-                    Get Started
-                  </Button>
-                </Link>
-              </>
+              <Link href="/auth">
+                <Button className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 transition-all duration-200 shadow-lg hover:shadow-orange-200 transform hover:scale-105">
+                  Sign In
+                </Button>
+              </Link>
             )}
           </div>
 
@@ -197,14 +190,9 @@ export default function Navigation() {
                   </button>
                 </>
               ) : (
-                <>
-                  <Link href="/auth" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium" onClick={handleLinkClick}>
-                    Login
-                  </Link>
-                  <Link href="/auth" className="block px-3 py-2 text-white bg-orange-500 hover:bg-orange-600 font-medium rounded-lg mx-3" onClick={handleLinkClick}>
-                    Get Started
-                  </Link>
-                </>
+                <Link href="/auth" className="block px-3 py-2 text-white bg-orange-500 hover:bg-orange-600 font-medium rounded-lg mx-3" onClick={handleLinkClick}>
+                  Sign In
+                </Link>
               )}
             </div>
           </div>
