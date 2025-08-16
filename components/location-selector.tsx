@@ -42,9 +42,9 @@ export default function LocationSelector({
       const locationData = await reverseGeocode(coords.latitude, coords.longitude);
       
       const fullLocation = {
-        city: (locationData as any).city || (locationData as any).town || (locationData as any).village || 'Unknown City',
+        city: locationData.city || 'Unknown City',
         state: (locationData as any).state || (locationData as any).region || '',
-        country: (locationData as any).country || 'Unknown Country',
+        country: locationData.country || 'Unknown Country',
         coordinates: {
           latitude: coords.latitude,
           longitude: coords.longitude
