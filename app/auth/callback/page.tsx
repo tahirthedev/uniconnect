@@ -16,8 +16,13 @@ export default function AuthCallback() {
       localStorage.setItem('token', token)
       localStorage.setItem('refreshToken', refreshToken)
       
-      // Redirect to homepage
-      router.replace('/')
+      // Trigger storage event to update navigation state
+      window.dispatchEvent(new Event('storage'))
+      
+      // Small delay to ensure navigation updates, then redirect
+      setTimeout(() => {
+        router.replace('/')
+      }, 100)
     } else {
       // If no tokens, redirect to auth page with error
       router.replace('/auth?error=authentication_failed')
