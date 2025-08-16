@@ -56,7 +56,7 @@ app.use(cors({
     'https://www.saydone.net', // New production domain
     'https://saydone.net', // New production domain without www
     'https://uniconnect-production.up.railway.app', // Old production frontend (backup)
-    'https://perceptive-surprise-production.up.railway.app',
+    'https://api.saydone.net',
     'http://localhost:5000', // Production backend (for internal calls)
   ],
   credentials: true,
