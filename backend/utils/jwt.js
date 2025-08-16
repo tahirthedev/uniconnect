@@ -9,6 +9,7 @@ const generateToken = (user) => {
   const payload = {
     userId: user._id,
     email: user.email,
+    name: user.name,
     role: user.role,
     iat: Math.floor(Date.now() / 1000)
   };

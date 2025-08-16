@@ -12,17 +12,32 @@ export default function AuthCallback() {
     const refreshToken = searchParams.get('refresh')
 
     if (token && refreshToken) {
-      // Store tokens in localStorage
-      localStorage.setItem('token', token)
-      localStorage.setItem('refreshToken', refreshToken)
-      
-      // Trigger storage event to update navigation state
-      window.dispatchEvent(new Event('storage'))
-      
-      // Small delay to ensure navigation updates, then redirect
-      setTimeout(() => {
-        router.replace('/')
-      }, 100)
+      try {
+        // Decode JWT to extract user info
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        const userInfo = {
+          userId: payload.userId,
+          email: payload.email,
+          name: payload.name,
+          role: payload.role
+        }
+        
+        // Store tokens and user info in localStorage
+        localStorage.setItem('token', token)
+        localStorage.setItem('refreshToken', refreshToken)
+        localStorage.setItem('userInfo', JSON.stringify(userInfo))
+        
+        // Trigger storage event to update navigation state
+        window.dispatchEvent(new Event('storage'))
+        
+        // Small delay to ensure navigation updates, then redirect
+        setTimeout(() => {
+          router.replace('/')
+        }, 100)
+      } catch (error) {
+        console.error('Error decoding JWT:', error)
+        router.replace('/auth?error=invalid_token')
+      }
     } else {
       // If no tokens, redirect to auth page with error
       router.replace('/auth?error=authentication_failed')
