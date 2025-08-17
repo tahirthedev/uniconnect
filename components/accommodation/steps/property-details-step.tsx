@@ -10,12 +10,24 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 interface PropertyDetailsStepProps {
   data: any;
   updateData: (updates: any) => void;
-  onNextStep?: () => void;
+  validationErrors?: string[];
 }
 
-export default function PropertyDetailsStep({ data, updateData, onNextStep }: PropertyDetailsStepProps) {
+export default function PropertyDetailsStep({ data, updateData, validationErrors = [] }: PropertyDetailsStepProps) {
   const [activeSection, setActiveSection] = useState('location');
   const [completedSections, setCompletedSections] = useState<string[]>([]);
+
+  // Auto-navigate to next incomplete section when validation errors occur
+  useEffect(() => {
+    if (validationErrors.length > 0) {
+      const nextSection = getNextIncompleteSection();
+      if (nextSection && nextSection !== activeSection) {
+        setActiveSection(nextSection);
+        // Scroll to top of the step to show the new section
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  }, [validationErrors]);
 
   // Check section completion
   const checkSectionCompletion = (sectionId: string): boolean => {
@@ -112,21 +124,8 @@ export default function PropertyDetailsStep({ data, updateData, onNextStep }: Pr
         {completedSections.length === sections.length && (
           <Alert className="mt-4 border-green-200 bg-green-50">
             <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800 flex items-center justify-between">
-              <span>
-                <strong>Great!</strong> All property details completed. Ready to move to the next step?
-              </span>
-              <Button 
-                size="sm" 
-                className="ml-4 bg-green-600 hover:bg-green-700"
-                onClick={() => {
-                  if (onNextStep) {
-                    onNextStep();
-                  }
-                }}
-              >
-                Continue to Amenities <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
+            <AlertDescription className="text-green-800">
+              <strong>Great!</strong> All property details completed. You can now proceed to the next step using the Next button below.
             </AlertDescription>
           </Alert>
         )}
@@ -184,9 +183,16 @@ export default function PropertyDetailsStep({ data, updateData, onNextStep }: Pr
                 placeholder="Enter the complete address including postcode (e.g., 123 Oxford Street, Manchester M1 4PD)"
                 value={data.details.address}
                 onChange={(e) => handleDetailsUpdate('address', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                  validationErrors.includes('address') 
+                    ? 'border-red-500 bg-red-50' 
+                    : 'border-gray-300'
+                }`}
                 rows={3}
               />
+              {validationErrors.includes('address') && (
+                <p className="text-sm text-red-600 mt-1">Address is required</p>
+              )}
               <p className="text-xs text-gray-500 mt-1">
                 This will be used for precise location mapping
               </p>
@@ -201,8 +207,15 @@ export default function PropertyDetailsStep({ data, updateData, onNextStep }: Pr
                 placeholder="e.g., Manchester, Birmingham, Leeds"
                 value={data.details.city}
                 onChange={(e) => handleDetailsUpdate('city', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                  validationErrors.includes('city') 
+                    ? 'border-red-500 bg-red-50' 
+                    : 'border-gray-300'
+                }`}
               />
+              {validationErrors.includes('city') && (
+                <p className="text-sm text-red-600 mt-1">City is required</p>
+              )}
               <p className="text-xs text-gray-500 mt-1">
                 This will be displayed publicly and used for search filtering
               </p>
@@ -224,19 +237,9 @@ export default function PropertyDetailsStep({ data, updateData, onNextStep }: Pr
             {/* Section Completion Prompt */}
             {checkSectionCompletion('location') && (
               <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-800">Location details completed!</span>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => setActiveSection('availability')}
-                    className="border-green-300 text-green-700 hover:bg-green-100"
-                  >
-                    Next: Availability <ArrowRight className="h-3 w-3 ml-1" />
-                  </Button>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">Location details completed!</span>
                 </div>
               </div>
             )}
@@ -311,19 +314,9 @@ export default function PropertyDetailsStep({ data, updateData, onNextStep }: Pr
             {/* Section Completion Prompt */}
             {checkSectionCompletion('availability') && (
               <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-800">Availability details completed!</span>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => setActiveSection('capacity')}
-                    className="border-green-300 text-green-700 hover:bg-green-100"
-                  >
-                    Next: Capacity & Size <ArrowRight className="h-3 w-3 ml-1" />
-                  </Button>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">Availability details completed!</span>
                 </div>
               </div>
             )}
@@ -399,19 +392,9 @@ export default function PropertyDetailsStep({ data, updateData, onNextStep }: Pr
             {/* Section Completion Prompt */}
             {checkSectionCompletion('capacity') && (
               <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-800">Capacity details completed!</span>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => setActiveSection('pricing')}
-                    className="border-green-300 text-green-700 hover:bg-green-100"
-                  >
-                    Next: Pricing <ArrowRight className="h-3 w-3 ml-1" />
-                  </Button>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">Capacity details completed!</span>
                 </div>
               </div>
             )}
@@ -441,10 +424,17 @@ export default function PropertyDetailsStep({ data, updateData, onNextStep }: Pr
                     min="0"
                     value={data.pricing.rent}
                     onChange={(e) => handlePricingUpdate('rent', parseInt(e.target.value) || 0)}
-                    className="w-full pl-8 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className={`w-full pl-8 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                      validationErrors.includes('rent') 
+                        ? 'border-red-500 bg-red-50' 
+                        : 'border-gray-300'
+                    }`}
                     placeholder="500"
                   />
                 </div>
+                {validationErrors.includes('rent') && (
+                  <p className="text-sm text-red-600 mt-1">Rent amount is required and must be greater than 0</p>
+                )}
               </div>
               
               <div>
@@ -472,10 +462,17 @@ export default function PropertyDetailsStep({ data, updateData, onNextStep }: Pr
                     min="0"
                     value={data.pricing.deposit}
                     onChange={(e) => handlePricingUpdate('deposit', parseInt(e.target.value) || 0)}
-                    className="w-full pl-8 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className={`w-full pl-8 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                      validationErrors.includes('deposit') 
+                        ? 'border-red-500 bg-red-50' 
+                        : 'border-gray-300'
+                    }`}
                     placeholder="500"
                   />
                 </div>
+                {validationErrors.includes('deposit') && (
+                  <p className="text-sm text-red-600 mt-1">Deposit must be 0 or greater</p>
+                )}
               </div>
             </div>
             

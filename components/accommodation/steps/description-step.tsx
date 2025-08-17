@@ -16,9 +16,10 @@ import { Badge } from '@/components/ui/badge';
 interface DescriptionStepProps {
   data: any;
   updateData: (updates: any) => void;
+  validationErrors?: string[];
 }
 
-export default function DescriptionStep({ data, updateData }: DescriptionStepProps) {
+export default function DescriptionStep({ data, updateData, validationErrors = [] }: DescriptionStepProps) {
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -102,8 +103,15 @@ export default function DescriptionStep({ data, updateData }: DescriptionStepPro
               value={data.description || ''}
               onChange={(e) => handleDescriptionChange(e.target.value)}
               placeholder="Describe your property in detail. Include information about the location, nearby amenities, transportation links, what makes it special, house rules, and any other important details potential tenants should know..."
-              className="w-full h-40 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+              className={`w-full h-40 p-4 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none ${
+                validationErrors.includes('description') 
+                  ? 'border-red-500 bg-red-50' 
+                  : 'border-gray-300'
+              }`}
             />
+            {validationErrors.includes('description') && (
+              <p className="text-sm text-red-600 mt-1">Description must be at least 50 characters long</p>
+            )}
             <div className="flex justify-between text-xs text-gray-500 mt-1">
               <span>{wordCount} words, {charCount} characters</span>
               <span className={charCount < 50 ? 'text-red-500' : 'text-green-600'}>

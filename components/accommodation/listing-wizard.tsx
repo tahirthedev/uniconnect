@@ -133,7 +133,94 @@ export default function ListingWizard() {
     setFormData(prev => ({ ...prev, ...updates }));
   }, []);
 
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  const validateStep = (step: number): { isValid: boolean; errors: string[]; nextIncompleteSection?: string } => {
+    const errors: string[] = [];
+    let nextIncompleteSection: string | undefined;
+    
+    switch (step) {
+      case 1:
+        if (!formData.type) errors.push('property-type');
+        break;
+      case 2:
+        // Check each section individually for step 2
+        const locationComplete = !!(formData.details.address && formData.details.city);
+        const availabilityComplete = !!(formData.details.availability.from && formData.details.tenure);
+        const capacityComplete = !!(formData.details.capacity > 0 && formData.details.bedrooms > 0 && formData.details.bathrooms > 0);
+        const pricingComplete = !!(formData.pricing.rent > 0 && formData.pricing.deposit >= 0);
+        
+        // Determine next incomplete section
+        if (!locationComplete) {
+          nextIncompleteSection = 'location';
+          if (!formData.details.address) errors.push('address');
+          if (!formData.details.city) errors.push('city');
+        } else if (!availabilityComplete) {
+          nextIncompleteSection = 'availability';
+        } else if (!capacityComplete) {
+          nextIncompleteSection = 'capacity';
+        } else if (!pricingComplete) {
+          nextIncompleteSection = 'pricing';
+          if (!formData.pricing.rent || formData.pricing.rent <= 0) errors.push('rent');
+          if (formData.pricing.deposit < 0) errors.push('deposit');
+        }
+        
+        // Only proceed to next step if ALL sections are complete
+        const allSectionsComplete = locationComplete && availabilityComplete && capacityComplete && pricingComplete;
+        if (!allSectionsComplete) {
+          errors.push('incomplete-sections');
+        }
+        break;
+      case 3:
+        // Amenities are optional
+        break;
+      case 4:
+        // Preferences are optional
+        break;
+      case 5:
+        if (!formData.description || formData.description.length < 50) errors.push('description');
+        break;
+      case 6:
+        // Final validation
+        break;
+    }
+    
+    return { isValid: errors.length === 0, errors, nextIncompleteSection };
+  };
+
   const nextStep = () => {
+    const validation = validateStep(currentStep);
+    
+    if (!validation.isValid) {
+      setValidationErrors(validation.errors);
+      
+      // Special handling for step 2 - provide helpful navigation message
+      if (currentStep === 2 && validation.nextIncompleteSection) {
+        const sectionNames = {
+          location: 'Location',
+          availability: 'Availability', 
+          capacity: 'Capacity & Size',
+          pricing: 'Pricing'
+        };
+        const nextSectionName = sectionNames[validation.nextIncompleteSection as keyof typeof sectionNames];
+        
+        toast({
+          title: `Complete ${nextSectionName} section`,
+          description: `Please fill in the required fields in the ${nextSectionName} section to continue.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      toast({
+        title: "Please complete required fields",
+        description: "The highlighted fields need to be filled before continuing.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setValidationErrors([]);
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     }
@@ -244,6 +331,7 @@ export default function ListingWizard() {
           <PropertyTypeStep
             data={formData}
             updateData={updateFormData}
+            validationErrors={validationErrors}
           />
         );
       case 2:
@@ -251,7 +339,7 @@ export default function ListingWizard() {
           <PropertyDetailsStep
             data={formData}
             updateData={updateFormData}
-            onNextStep={nextStep}
+            validationErrors={validationErrors}
           />
         );
       case 3:
@@ -273,6 +361,7 @@ export default function ListingWizard() {
           <DescriptionStep
             data={formData}
             updateData={updateFormData}
+            validationErrors={validationErrors}
           />
         );
       case 6:
@@ -289,22 +378,8 @@ export default function ListingWizard() {
   };
 
   const canProceed = () => {
-    switch (currentStep) {
-      case 1:
-        return formData.type !== '';
-      case 2:
-        return formData.details.address && formData.pricing.rent > 0;
-      case 3:
-        return true; // Amenities are optional
-      case 4:
-        return true; // Preferences are optional
-      case 5:
-        return formData.description.length > 50;
-      case 6:
-        return true;
-      default:
-        return false;
-    }
+    // Always allow proceeding - validation happens when Next is clicked
+    return true;
   };
 
   return (
@@ -353,7 +428,6 @@ export default function ListingWizard() {
             {currentStep < totalSteps ? (
               <Button
                 onClick={nextStep}
-                disabled={!canProceed()}
                 className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700"
               >
                 Next

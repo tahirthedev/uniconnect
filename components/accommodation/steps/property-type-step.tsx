@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 interface PropertyTypeStepProps {
   data: any;
   updateData: (updates: any) => void;
+  validationErrors?: string[];
 }
 
 const propertyTypes = [
@@ -39,7 +40,7 @@ const propertyTypes = [
   },
 ];
 
-export default function PropertyTypeStep({ data, updateData }: PropertyTypeStepProps) {
+export default function PropertyTypeStep({ data, updateData, validationErrors = [] }: PropertyTypeStepProps) {
   const handleTypeSelect = (type: string) => {
     updateData({ type });
   };
@@ -104,6 +105,14 @@ export default function PropertyTypeStep({ data, updateData }: PropertyTypeStepP
           );
         })}
       </div>
+
+      {validationErrors.includes('property-type') && (
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-800 text-sm font-medium">
+            ⚠️ Please select a property type to continue.
+          </p>
+        </div>
+      )}
 
       {data.type && (
         <div className="mt-8 p-4 bg-green-50 rounded-lg">
