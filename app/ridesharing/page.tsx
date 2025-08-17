@@ -287,7 +287,7 @@ export default function RidesharingPage() {
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setSelectedCity('all')}
-                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-full font-medium transition-all duration-200 ${
+                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-full font-medium transition-all duration-200 whitespace-nowrap ${
                       selectedCity === 'all'
                         ? 'bg-orange-500 text-white shadow-md'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -299,7 +299,7 @@ export default function RidesharingPage() {
                     <button
                       key={city}
                       onClick={() => setSelectedCity(city)}
-                      className={`px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-full font-medium transition-all duration-200 ${
+                      className={`px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-full font-medium transition-all duration-200 whitespace-nowrap ${
                         selectedCity === city
                           ? 'bg-orange-500 text-white shadow-md'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -328,12 +328,12 @@ export default function RidesharingPage() {
         <div className="space-y-4">
           {filteredRides.length === 0 ? (
             <Card>
-              <CardContent className="p-8 text-center">
-                <Car className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <CardContent className="p-6 sm:p-8 text-center">
+                <Car className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No rides found</h3>
-                <p className="text-gray-600 mb-4">Check back later for new rides or be the first to offer one!</p>
+                <p className="text-gray-600 mb-4 text-sm sm:text-base">Check back later for new rides or be the first to offer one!</p>
                 <Link href="/ridesharing/offer">
-                  <Button className="bg-orange-500 hover:bg-orange-600">
+                  <Button className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto">
                     Offer a Ride
                   </Button>
                 </Link>
@@ -342,67 +342,71 @@ export default function RidesharingPage() {
           ) : (
             filteredRides.map((ride) => (
               <Card key={ride._id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col space-y-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center mb-3">
                         <img
                           src={ride.user?.avatar || '/placeholder-user.jpg'}
                           alt={ride.user?.name || 'User'}
-                          className="w-10 h-10 rounded-full mr-3"
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-3 flex-shrink-0"
                         />
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{ride.title}</h3>
-                          <p className="text-sm text-gray-600">{ride.user?.name || 'Anonymous'}</p>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold text-gray-900 truncate">{ride.title}</h3>
+                          <p className="text-sm text-gray-600 truncate">{ride.user?.name || 'Anonymous'}</p>
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div className="flex items-center text-gray-600">
-                          <MapPin className="h-4 w-4 mr-2 text-green-500" />
-                          <span className="text-sm">From: {ride.pickup}</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-4">
+                        <div className="flex items-center text-gray-600 min-w-0">
+                          <MapPin className="h-4 w-4 mr-2 text-green-500 flex-shrink-0" />
+                          <span className="text-sm truncate">From: {ride.pickup}</span>
+                        </div>
+                        <div className="flex items-center text-gray-600 min-w-0">
+                          <MapPin className="h-4 w-4 mr-2 text-red-500 flex-shrink-0" />
+                          <span className="text-sm truncate">To: {ride.destination}</span>
                         </div>
                         <div className="flex items-center text-gray-600">
-                          <MapPin className="h-4 w-4 mr-2 text-red-500" />
-                          <span className="text-sm">To: {ride.destination}</span>
-                        </div>
-                        <div className="flex items-center text-gray-600">
-                          <Calendar className="h-4 w-4 mr-2" />
+                          <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
                           <span className="text-sm">{formatDate(ride.date)}</span>
                         </div>
                         <div className="flex items-center text-gray-600">
-                          <Clock className="h-4 w-4 mr-2" />
+                          <Clock className="h-4 w-4 mr-2 flex-shrink-0" />
                           <span className="text-sm">{ride.time}</span>
                         </div>
                       </div>
                       
-                      <p className="text-gray-700 text-sm mb-4">{ride.description}</p>
+                      <p className="text-gray-700 text-sm mb-4 break-words">{ride.description}</p>
                       
-                      <div className="flex items-center gap-4">
-                        <Badge variant="secondary" className="flex items-center gap-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                        <Badge variant="secondary" className="flex items-center gap-1 w-fit">
                           <Users className="h-3 w-3" />
                           {ride.availableSeats} seats available
                         </Badge>
-                        <span className="text-2xl font-bold text-orange-600">
+                        <span className="text-xl sm:text-2xl font-bold text-orange-600">
                           £{getPriceValue(ride.price)}
                         </span>
                       </div>
                     </div>
                     
-                    <div className="flex flex-col gap-2 ml-6">
+                    {/* Mobile-responsive action buttons */}
+                    <div className="flex flex-row sm:flex-col gap-2 sm:gap-2 sm:ml-4 flex-shrink-0">
                       <Button
                         onClick={() => handleBookRide(ride._id)}
-                        className="bg-orange-500 hover:bg-orange-600"
+                        className="bg-orange-500 hover:bg-orange-600 flex-1 sm:flex-initial text-sm sm:text-base"
+                        size="sm"
                       >
-                        Request Ride
+                        <span className="sm:hidden">Request</span>
+                        <span className="hidden sm:inline">Request Ride</span>
                       </Button>
                       <Button
                         variant="outline"
                         onClick={() => handleMessage(ride._id, ride.user?.name || 'Anonymous')}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial text-sm sm:text-base"
+                        size="sm"
                       >
-                        <MessageCircle className="h-4 w-4" />
-                        Message
+                        <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <span>Message</span>
                       </Button>
                     </div>
                   </div>
