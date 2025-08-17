@@ -102,6 +102,11 @@ export default function Navigation() {
                 Accommodation
               </Button>
             </Link>
+            <Link href="/marketplace">
+              <Button variant="ghost" className="hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 transform hover:scale-105">
+                Marketplace
+              </Button>
+            </Link>
             <Link href="/messages">
               <Button variant="ghost" className="hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 transform hover:scale-105">
                 Messages
@@ -166,6 +171,9 @@ export default function Navigation() {
               </Link>
               <Link href="/accommodation" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium" onClick={handleLinkClick}>
                 Accommodation
+              </Link>
+              <Link href="/marketplace" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium" onClick={handleLinkClick}>
+                Marketplace
               </Link>
               <Link href="/messages" className="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium" onClick={handleLinkClick}>
                 Messages

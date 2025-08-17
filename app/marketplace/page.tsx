@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import LocationFilter from "@/components/location-filter";
 import { useLocationData, useLocation } from '@/contexts/LocationContext';
 import { usePostsByCategory, usePosts } from '@/contexts/PostsContext';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import MessagingModal from '@/components/messaging-modal';
 
@@ -18,6 +18,7 @@ export default function MarketplacePage() {
   const locationData = useLocationData();
   const { updateRadius } = useLocation();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { toast } = useToast();
   
   // Use PostsContext for marketplace posts
@@ -325,7 +326,11 @@ export default function MarketplacePage() {
               {viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {filteredProducts.map((product) => (
-                    <Card key={product.id} className="hover:shadow-lg transition-shadow">
+                    <Card 
+                      key={product.id} 
+                      className="hover:shadow-lg transition-shadow cursor-pointer"
+                      onClick={() => router.push(`/marketplace/${product.id}`)}
+                    >
                       <CardContent className="p-0">
                         <div className="relative">
                           <img
@@ -339,10 +344,16 @@ export default function MarketplacePage() {
                             </Badge>
                           )}
                           <div className="absolute top-3 right-3 flex gap-2">
-                            <button className="p-2 bg-white rounded-full shadow hover:bg-gray-50">
+                            <button 
+                              className="p-2 bg-white rounded-full shadow hover:bg-gray-50"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <Heart className="h-4 w-4 text-gray-600" />
                             </button>
-                            <button className="p-2 bg-white rounded-full shadow hover:bg-gray-50">
+                            <button 
+                              className="p-2 bg-white rounded-full shadow hover:bg-gray-50"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <Share className="h-4 w-4 text-gray-600" />
                             </button>
                           </div>
@@ -392,7 +403,11 @@ export default function MarketplacePage() {
               ) : (
                 <div className="space-y-4">
                   {filteredProducts.map((product) => (
-                    <Card key={product.id} className="hover:shadow-lg transition-shadow">
+                    <Card 
+                      key={product.id} 
+                      className="hover:shadow-lg transition-shadow cursor-pointer"
+                      onClick={() => router.push(`/marketplace/${product.id}`)}
+                    >
                       <CardContent className="p-6">
                         <div className="flex gap-4">
                           <img
@@ -448,7 +463,10 @@ export default function MarketplacePage() {
                                 <MessageCircle className="h-4 w-4 mr-2" />
                                 Contact Seller
                               </Button>
-                              <Button variant="outline">
+                              <Button 
+                                variant="outline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <Heart className="h-4 w-4 mr-2" />
                                 Save
                               </Button>

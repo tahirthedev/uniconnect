@@ -95,7 +95,7 @@ export default function HomePage() {
     { id: 'pick-drop', label: 'Rides', icon: Car, color: 'bg-blue-500', hoverColor: 'hover:bg-blue-600', enabled: true },
     { id: 'accommodation', label: 'Housing', icon: Home, color: 'bg-green-500', hoverColor: 'hover:bg-green-600', enabled: true },
     { id: 'jobs', label: 'Jobs', icon: Briefcase, color: 'bg-purple-500', hoverColor: 'hover:bg-purple-600', enabled: true },
-    { id: 'buy-sell', label: 'Marketplace', icon: ShoppingBag, color: 'bg-gray-400', hoverColor: 'hover:bg-gray-400', enabled: false },
+    { id: 'buy-sell', label: 'Marketplace', icon: ShoppingBag, color: 'bg-orange-500', hoverColor: 'hover:bg-orange-600', enabled: true },
     { id: 'currency-exchange', label: 'Currency', icon: DollarSign, color: 'bg-gray-400', hoverColor: 'hover:bg-gray-400', enabled: false },
   ]
 
@@ -110,7 +110,7 @@ export default function HomePage() {
       case 'jobs':
         return { icon: Briefcase, color: 'text-purple-500', bgColor: 'bg-purple-100' };
       case 'buy-sell':
-        return { icon: ShoppingBag, color: 'text-pink-500', bgColor: 'bg-pink-100' };
+        return { icon: ShoppingBag, color: 'text-orange-500', bgColor: 'bg-orange-100' };
       case 'currency-exchange':
         return { icon: DollarSign, color: 'text-yellow-500', bgColor: 'bg-yellow-100' };
       default:
