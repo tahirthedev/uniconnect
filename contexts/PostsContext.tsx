@@ -68,6 +68,7 @@ interface PostsContextType {
 
   // Actions
   refreshPosts: () => Promise<void>;
+  forceRefreshPosts: () => Promise<void>;
   getPostsByCategory: (category: string) => Post[];
   getPostsByLocation: (city?: string, radius?: number) => Post[];
   getPostsWithFilters: (filters: {
@@ -109,6 +110,13 @@ export function PostsProvider({ children }: PostsProviderProps) {
       return;
     }
 
+    return await forceRefreshPosts();
+  };
+
+  // Force refresh posts (ignores cache)
+  const forceRefreshPosts = async () => {
+    const now = Date.now();
+    
     try {
       setLoading(true);
       setError(null);
@@ -340,6 +348,7 @@ export function PostsProvider({ children }: PostsProviderProps) {
 
     // Actions
     refreshPosts,
+    forceRefreshPosts,
     getPostsByCategory,
     getPostsByLocation,
     getPostsWithFilters,

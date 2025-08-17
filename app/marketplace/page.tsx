@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useMemo } from "react";
-import { ArrowLeft, Search, Grid, List, Heart, Share, Star, MapPin, Clock, Eye, ShoppingBag } from "lucide-react";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { ArrowLeft, Search, Grid, List, Heart, Share, Star, MapPin, Clock, Eye, ShoppingBag, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,15 +9,20 @@ import { Badge } from "@/components/ui/badge";
 import LocationFilter from "@/components/location-filter";
 import { useLocationData, useLocation } from '@/contexts/LocationContext';
 import { usePostsByCategory, usePosts } from '@/contexts/PostsContext';
+import { useSearchParams } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import MessagingModal from '@/components/messaging-modal';
 
 export default function MarketplacePage() {
   // Global location state
   const locationData = useLocationData();
   const { updateRadius } = useLocation();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
   
   // Use PostsContext for marketplace posts
   const { posts: marketplacePosts, loading, error } = usePostsByCategory('buy-sell');
-  const { updatePost } = usePosts();
+  const { updatePost, forceRefreshPosts } = usePosts();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
@@ -25,6 +30,33 @@ export default function MarketplacePage() {
   const [conditionFilter, setConditionFilter] = useState('');
   const [selectedCity, setSelectedCity] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Messaging modal state
+  const [messagingModal, setMessagingModal] = useState({
+    isOpen: false,
+    recipientName: '',
+    recipientId: '',
+    itemTitle: '',
+    itemId: ''
+  });
+
+  // Handle success parameter from URL
+  useEffect(() => {
+    const success = searchParams.get('success');
+    if (success === 'true') {
+      // Force refresh posts to show the newly created item
+      forceRefreshPosts();
+      
+      // Show success message
+      toast({
+        title: "Item listed successfully! 🎉",
+        description: "Your item is now visible in the marketplace.",
+      });
+      
+      // Remove success parameter from URL without causing navigation
+      window.history.replaceState({}, '', '/marketplace');
+    }
+  }, [searchParams, forceRefreshPosts, toast]);
 
   // Transform posts into products format
   const products = useMemo(() => {
@@ -65,6 +97,31 @@ export default function MarketplacePage() {
       setLocationFilter(data.location);
     }
   }, [locationData.radius, updateRadius]);
+
+  // Handle contact seller
+  const handleContactSeller = useCallback((product: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Find the original post to get the author ID
+    const originalPost = marketplacePosts.find(post => post._id === product.id);
+    if (!originalPost) {
+      toast({
+        title: "Error",
+        description: "Unable to contact seller. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setMessagingModal({
+      isOpen: true,
+      recipientName: product.seller,
+      recipientId: originalPost.author._id,
+      itemTitle: product.title,
+      itemId: product.id
+    });
+  }, [marketplacePosts, toast]);
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = !searchQuery || 
@@ -150,9 +207,11 @@ export default function MarketplacePage() {
                 <List className="h-4 w-4" />
               </button>
             </div>
-            <Button className="bg-orange-500 hover:bg-orange-600 text-sm sm:text-base px-4 sm:px-6">
-              Sell Item
-            </Button>
+            <Link href="/marketplace/sell">
+              <Button className="bg-orange-500 hover:bg-orange-600 text-sm sm:text-base px-4 sm:px-6">
+                Sell Item
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -298,7 +357,7 @@ export default function MarketplacePage() {
                             </Badge>
                             <div className="flex items-center text-xs text-gray-500">
                               <Eye className="h-3 w-3 mr-1" />
-                              {product.views}
+                              {product.views === 0 ? 'New' : product.views}
                             </div>
                           </div>
                           
@@ -323,7 +382,11 @@ export default function MarketplacePage() {
                           </div>
                           
                           <div className="mt-3 pt-3 border-t">
-                            <Button className="w-full bg-orange-500 hover:bg-orange-600">
+                            <Button 
+                              className="w-full bg-orange-500 hover:bg-orange-600"
+                              onClick={(e) => handleContactSeller(product, e)}
+                            >
+                              <MessageCircle className="h-4 w-4 mr-2" />
                               Contact Seller
                             </Button>
                           </div>
@@ -368,11 +431,11 @@ export default function MarketplacePage() {
                                 <div className="flex items-center gap-4 text-xs text-gray-500">
                                   <div className="flex items-center">
                                     <Eye className="h-3 w-3 mr-1" />
-                                    {product.views} views
+                                    {product.views === 0 ? 'New' : `${product.views} views`}
                                   </div>
                                   <div className="flex items-center">
                                     <Heart className="h-3 w-3 mr-1" />
-                                    {product.likes}
+                                    {product.likes === 0 ? 'New' : product.likes}
                                   </div>
                                 </div>
                               </div>
@@ -394,7 +457,11 @@ export default function MarketplacePage() {
                             </div>
                             
                             <div className="flex gap-2">
-                              <Button className="bg-orange-500 hover:bg-orange-600">
+                              <Button 
+                                className="bg-orange-500 hover:bg-orange-600"
+                                onClick={(e) => handleContactSeller(product, e)}
+                              >
+                                <MessageCircle className="h-4 w-4 mr-2" />
                                 Contact Seller
                               </Button>
                               <Button variant="outline">
@@ -413,6 +480,16 @@ export default function MarketplacePage() {
           )}
         </div>
       </div>
+
+      {/* Messaging Modal */}
+      <MessagingModal
+        isOpen={messagingModal.isOpen}
+        onClose={() => setMessagingModal({ ...messagingModal, isOpen: false })}
+        recipientName={messagingModal.recipientName}
+        recipientId={messagingModal.recipientId}
+        rideTitle={messagingModal.itemTitle}
+        rideId={messagingModal.itemId}
+      />
     </div>
   );
 }
