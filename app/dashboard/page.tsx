@@ -193,15 +193,15 @@ export default function DashboardPage() {
                   height={32}
                   className="rounded-lg"
                 />
-                <span className="text-xl font-bold text-gray-900">SayDone</span>
+                <span className="text-xl font-bold text-gray-900 hidden sm:block">SayDone</span>
               </Link>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <Link href="/posts">
                 <Button className="bg-orange-500 hover:bg-orange-600">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Post
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Create Post</span>
                 </Button>
               </Link>
               
@@ -209,7 +209,7 @@ export default function DashboardPage() {
                 <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
                   <User className="h-4 w-4 text-orange-600" />
                 </div>
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 hidden sm:block">
                   {user?.name || 'User'}
                 </span>
               </div>
@@ -227,58 +227,58 @@ export default function DashboardPage() {
 
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Posts</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.totalPosts}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Total Posts</p>
+                    <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.totalPosts}</p>
                   </div>
-                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                    <MessageCircle className="h-6 w-6 text-orange-600" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Active Posts</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.activePosts}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Active Posts</p>
+                    <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.activePosts}</p>
                   </div>
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <Eye className="h-6 w-6 text-green-600" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Eye className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Views</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.totalViews}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Total Views</p>
+                    <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.totalViews}</p>
                   </div>
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Eye className="h-6 w-6 text-blue-600" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Eye className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Likes</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.totalLikes}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Total Likes</p>
+                    <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.totalLikes}</p>
                   </div>
-                  <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
-                    <MessageCircle className="h-6 w-6 text-pink-600" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-pink-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" />
                   </div>
                 </div>
               </CardContent>
@@ -289,10 +289,10 @@ export default function DashboardPage() {
         {/* My Posts Section */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
               <CardTitle className="text-xl font-semibold">My Posts</CardTitle>
               <Link href="/posts">
-                <Button className="bg-orange-500 hover:bg-orange-600">
+                <Button className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Create New Post
                 </Button>
@@ -301,12 +301,12 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             {posts.length === 0 ? (
-              <div className="text-center py-12">
-                <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <div className="text-center py-8 sm:py-12 px-4">
+                <MessageCircle className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No posts yet</h3>
-                <p className="text-gray-600 mb-6">Create your first post to get started</p>
+                <p className="text-gray-600 mb-6 text-sm sm:text-base">Create your first post to get started</p>
                 <Link href="/posts">
-                  <Button className="bg-orange-500 hover:bg-orange-600">
+                  <Button className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     Create Your First Post
                   </Button>
@@ -319,11 +319,11 @@ export default function DashboardPage() {
                   const categoryColor = categoryColors[post.category as keyof typeof categoryColors] || 'bg-gray-500'
                   
                   return (
-                    <div key={post._id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-3">
-                            <div className={`w-8 h-8 ${categoryColor} rounded-full flex items-center justify-center`}>
+                    <div key={post._id} className="border border-gray-200 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow">
+                      <div className="flex flex-col space-y-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-3">
+                            <div className={`w-8 h-8 ${categoryColor} rounded-full flex items-center justify-center flex-shrink-0`}>
                               <IconComponent className="h-4 w-4 text-white" />
                             </div>
                             <Badge variant="secondary" className="capitalize">
@@ -337,42 +337,46 @@ export default function DashboardPage() {
                             </Badge>
                           </div>
                           
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2 break-words">
                             {post.title}
                           </h3>
                           
-                          <p className="text-gray-600 mb-3 line-clamp-2">
+                          <p className="text-gray-600 mb-3 line-clamp-2 break-words">
                             {post.description}
                           </p>
                           
-                          <div className="flex items-center space-x-4 text-sm text-gray-500">
-                            <div className="flex items-center space-x-1">
-                              <MapPin className="h-4 w-4" />
-                              <span>{post.location.city}, {post.location.state}</span>
+                          {/* Mobile-first metadata layout */}
+                          <div className="space-y-2 sm:space-y-0 sm:flex sm:items-center sm:flex-wrap sm:gap-4 text-sm text-gray-500">
+                            <div className="flex items-center space-x-1 min-w-0">
+                              <MapPin className="h-4 w-4 flex-shrink-0" />
+                              <span className="truncate">{post.location.city}, {post.location.state}</span>
                             </div>
                             <div className="flex items-center space-x-1">
-                              <Calendar className="h-4 w-4" />
+                              <Calendar className="h-4 w-4 flex-shrink-0" />
                               <span>{formatDate(post.createdAt)}</span>
                             </div>
                             <div className="flex items-center space-x-1">
-                              <Eye className="h-4 w-4" />
+                              <Eye className="h-4 w-4 flex-shrink-0" />
                               <span>{post.views} views</span>
                             </div>
                             {post.price && (
-                              <div className="font-semibold text-orange-600">
+                              <div className="font-semibold text-orange-600 sm:ml-auto">
                                 {formatPrice(post.price)}
                               </div>
                             )}
                           </div>
                         </div>
                         
-                        <div className="flex items-center space-x-2 ml-4">
+                        {/* Mobile-responsive action buttons */}
+                        <div className="flex items-center justify-end space-x-2 flex-shrink-0 sm:ml-4">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => router.push(`/posts/edit/${post._id}`)}
+                            className="flex-shrink-0"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Edit</span>
                           </Button>
                           
                           <Button
@@ -380,12 +384,15 @@ export default function DashboardPage() {
                             size="sm"
                             onClick={() => handleDeletePost(post._id)}
                             disabled={deletingPostId === post._id}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
                           >
                             {deletingPostId === post._id ? (
                               <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent" />
                             ) : (
-                              <Trash2 className="h-4 w-4" />
+                              <>
+                                <Trash2 className="h-4 w-4 sm:mr-1" />
+                                <span className="hidden sm:inline">Delete</span>
+                              </>
                             )}
                           </Button>
                         </div>
