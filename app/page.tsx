@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation'
 import LocationDisplay from "@/components/location-display"
 import MagicBento from "@/components/MagicBento"
 import LightRays from "@/components/LightRays"
-import BackToTop from "@/components/back-to-top"
+import CreatePostFab from "@/components/back-to-top"
 import MessagingModal from "@/components/messaging-modal"
 import { useLocationData } from '@/contexts/LocationContext'
 import { usePosts, usePostsWithFilters } from '@/contexts/PostsContext'
@@ -1114,8 +1114,8 @@ export default function HomePage() {
         </div>
       </footer>
       
-      {/* Back to Top Button */}
-      <BackToTop />
+      {/* Create Post FAB */}
+      <CreatePostFab />
 
       {/* Messaging Modal */}
       <MessagingModal
