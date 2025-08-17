@@ -93,8 +93,8 @@ export default function MarketplaceItemPage() {
       setLoading(true);
       const response = await apiClient.getPost(id);
       
-      if (response.success && response.data) {
-        setItem(response.data);
+      if (response.success && response.post) {
+        setItem(response.post);
       } else {
         setError('Item not found');
       }
