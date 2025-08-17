@@ -72,11 +72,9 @@ export default function MarketplacePage() {
       images: ["/placeholder.svg?height=300&width=400"],
       condition: post.details?.marketplace?.condition || 'Good',
       category: post.details?.marketplace?.category || 'General',
-      views: post.views || 0,
-      likes: post.likeCount || 0,
       description: post.description,
       verified: true,
-      featured: post.likeCount && post.likeCount > 10 // Featured if has many likes
+      featured: !!(post.likeCount && post.likeCount > 10) // Convert to boolean
     }));
   }, [marketplacePosts]);
 
@@ -355,10 +353,6 @@ export default function MarketplacePage() {
                             <Badge className={getConditionColor(product.condition)}>
                               {product.condition}
                             </Badge>
-                            <div className="flex items-center text-xs text-gray-500">
-                              <Eye className="h-3 w-3 mr-1" />
-                              {product.views === 0 ? 'New' : product.views}
-                            </div>
                           </div>
                           
                           <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{product.title}</h3>
@@ -427,17 +421,7 @@ export default function MarketplacePage() {
                                   {product.originalPrice && (
                                     <span className="text-sm text-gray-500 line-through">{product.originalPrice}</span>
                                   )}
-                                </div>
-                                <div className="flex items-center gap-4 text-xs text-gray-500">
-                                  <div className="flex items-center">
-                                    <Eye className="h-3 w-3 mr-1" />
-                                    {product.views === 0 ? 'New' : `${product.views} views`}
                                   </div>
-                                  <div className="flex items-center">
-                                    <Heart className="h-3 w-3 mr-1" />
-                                    {product.likes === 0 ? 'New' : product.likes}
-                                  </div>
-                                </div>
                               </div>
                             </div>
                             
