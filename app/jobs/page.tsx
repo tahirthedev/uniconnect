@@ -315,20 +315,22 @@ export default function JobsPage() {
                     onClick={() => router.push(`/jobs/${job._id}`)}
                     className="block group-hover:scale-[1.02] transition-transform duration-200"
                   >
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3">
-                            <Badge className={getTypeColor(job.details?.job?.type || 'full-time')}>
-                              {job.details?.job?.type ? 
-                                job.details.job.type.split('-').map((word: string) => 
-                                  word.charAt(0).toUpperCase() + word.slice(1)
-                                ).join('-') : 
-                                'Full-time'
-                              }
-                            </Badge>
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex flex-col space-y-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 mb-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge className={getTypeColor(job.details?.job?.type || 'full-time')}>
+                                {job.details?.job?.type ? 
+                                  job.details.job.type.split('-').map((word: string) => 
+                                    word.charAt(0).toUpperCase() + word.slice(1)
+                                  ).join('-') : 
+                                  'Full-time'
+                                }
+                              </Badge>
+                            </div>
                             {job.price && (
-                              <span className="text-lg font-bold text-orange-600">
+                              <span className="text-lg font-bold text-orange-600 flex-shrink-0">
                                 {job.price.currency === 'GBP' ? '£' : job.price.currency === 'USD' ? '$' : '€'}
                                 {job.price.amount}
                                 {job.price.type === 'hourly' ? '/hr' : job.price.type === 'monthly' ? '/month' : '/year'}
@@ -336,35 +338,45 @@ export default function JobsPage() {
                             )}
                           </div>
                           
-                          <h3 className="text-xl font-semibold text-gray-900 mb-2">{job.title}</h3>
-                          <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 break-words line-clamp-2">
+                            {job.title}
+                          </h3>
+                          
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600 mb-3">
                             {job.details?.job?.company && (
-                              <div className="flex items-center">
-                                <Building className="h-4 w-4 mr-1" />
-                                {job.details.job.company}
+                              <div className="flex items-center min-w-0">
+                                <Building className="h-4 w-4 mr-1 flex-shrink-0" />
+                                <span className="truncate">{job.details.job.company}</span>
                               </div>
                             )}
                             {job.location && (
-                              <div className="flex items-center">
-                                <MapPin className="h-4 w-4 mr-1" />
-                                {job.location.state ? `${job.location.city}, ${job.location.state}` : job.location.city}
+                              <div className="flex items-center min-w-0">
+                                <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
+                                <span className="truncate">
+                                  {job.location.state ? `${job.location.city}, ${job.location.state}` : job.location.city}
+                                </span>
                               </div>
                             )}
                             <div className="flex items-center">
-                              <Clock className="h-4 w-4 mr-1" />
-                              {formatDate(job.createdAt)}
+                              <Clock className="h-4 w-4 mr-1 flex-shrink-0" />
+                              <span>{formatDate(job.createdAt)}</span>
                             </div>
                           </div>
                           
-                          <p className="text-gray-700 mb-3">{job.description}</p>
+                          <p className="text-gray-700 mb-3 break-words line-clamp-3">{job.description}</p>
                           
                           {job.details?.job?.requirements && job.details.job.requirements.length > 0 && (
                             <div className="flex flex-wrap gap-2">
-                              {job.details.job.requirements.map((req: string, index: number) => (
-                                <Badge key={index} variant="outline" className="text-xs">
+                              {job.details.job.requirements.slice(0, 6).map((req: string, index: number) => (
+                                <Badge key={index} variant="outline" className="text-xs break-all">
                                   {req}
                                 </Badge>
                               ))}
+                              {job.details.job.requirements.length > 6 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{job.details.job.requirements.length - 6} more
+                                </Badge>
+                              )}
                             </div>
                           )}
                         </div>
@@ -373,11 +385,11 @@ export default function JobsPage() {
                   </div>
                   
                   {/* Contact Button - Outside clickable area */}
-                  <div className="px-6 pb-4 flex gap-2">
+                  <div className="px-4 sm:px-6 pb-4 flex flex-col sm:flex-row gap-2">
                     <Button 
                       size="sm" 
                       variant="outline"
-                      className="flex-1"
+                      className="flex-1 w-full sm:w-auto"
                       onClick={(e) => {
                         e.stopPropagation();
                         router.push(`/jobs/${job._id}`);
@@ -387,7 +399,7 @@ export default function JobsPage() {
                     </Button>
                     <Button 
                       size="sm" 
-                      className="flex-1 bg-orange-500 hover:bg-orange-600"
+                      className="flex-1 w-full sm:w-auto bg-orange-500 hover:bg-orange-600"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedJob(job);
@@ -395,7 +407,7 @@ export default function JobsPage() {
                       }}
                     >
                       <MessageCircle className="h-4 w-4 mr-1" />
-                      Contact Employer
+                      <span className="truncate">Contact Employer</span>
                     </Button>
                   </div>
                 </Card>
