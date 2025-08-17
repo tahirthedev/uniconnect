@@ -115,7 +115,7 @@ export default function PostsPage() {
     { id: 'pick-drop', label: 'Rides', icon: Car, color: 'bg-blue-500', enabled: true },
     { id: 'accommodation', label: 'Housing', icon: Home, color: 'bg-green-500', enabled: true },
     { id: 'jobs', label: 'Jobs', icon: Briefcase, color: 'bg-purple-500', enabled: true },
-    { id: 'buy-sell', label: 'Marketplace (Soon)', icon: ShoppingBag, color: 'bg-pink-500', enabled: false },
+    { id: 'buy-sell', label: 'Marketplace', icon: ShoppingBag, color: 'bg-orange-500', enabled: true },
     { id: 'currency-exchange', label: 'Currency (Soon)', icon: DollarSign, color: 'bg-yellow-500', enabled: false },
   ];
   
