@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { ArrowLeft, Search, Grid, List, Heart, Share, Star, MapPin, Clock, Eye, ShoppingBag, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { isAuthenticated } from '@/lib/auth';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import LocationFilter from "@/components/location-filter";
@@ -14,6 +15,9 @@ import { useToast } from '@/hooks/use-toast';
 import MessagingModal from '@/components/messaging-modal';
 
 export default function MarketplacePage() {
+  // Authentication modal state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  
   // Global location state
   const locationData = useLocationData();
   const { updateRadius } = useLocation();
@@ -31,6 +35,15 @@ export default function MarketplacePage() {
   const [conditionFilter, setConditionFilter] = useState('');
   const [selectedCity, setSelectedCity] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Handle sell item click with authentication check
+  const handleSellClick = () => {
+    if (!isAuthenticated()) {
+      setShowAuthModal(true);
+      return;
+    }
+    router.push('/marketplace/sell');
+  };
 
   // Messaging modal state
   const [messagingModal, setMessagingModal] = useState({
@@ -206,11 +219,9 @@ export default function MarketplacePage() {
                 <List className="h-4 w-4" />
               </button>
             </div>
-            <Link href="/marketplace/sell">
-              <Button className="bg-orange-500 hover:bg-orange-600 text-sm sm:text-base px-4 sm:px-6">
-                Sell Item
-              </Button>
-            </Link>
+            <Button onClick={handleSellClick} className="bg-orange-500 hover:bg-orange-600 text-sm sm:text-base px-4 sm:px-6">
+              Sell Item
+            </Button>
           </div>
         </div>
 
@@ -492,6 +503,29 @@ export default function MarketplacePage() {
         rideTitle={messagingModal.itemTitle}
         rideId={messagingModal.itemId}
       />
+      
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-xs w-full text-center animate-fade-in">
+            <h3 className="text-lg font-bold mb-2 text-gray-900">Login Required</h3>
+            <p className="text-gray-600 mb-6 text-sm">You must be logged in to sell an item.</p>
+            <Button
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold py-2 rounded-xl mb-2"
+              onClick={() => { window.location.href = '/auth'; }}
+            >
+              Go to Login
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full py-2 rounded-xl"
+              onClick={() => setShowAuthModal(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

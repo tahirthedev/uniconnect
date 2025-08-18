@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, MapPin, Clock, Briefcase, Building, Users, BookOpen, Search, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { isAuthenticated } from '@/lib/auth';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import LocationFilter from "@/components/location-filter";
@@ -74,6 +75,9 @@ interface Job {
 }
 
 export default function JobsPage() {
+  // Authentication modal state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  
   // Global location state
   const locationData = useLocationData();
   const { updateRadius } = useLocation();
@@ -140,6 +144,15 @@ export default function JobsPage() {
     }
   }, [locationData.radius, updateRadius]);
 
+  // Handle post job click with authentication check
+  const handlePostClick = () => {
+    if (!isAuthenticated()) {
+      setShowAuthModal(true);
+      return;
+    }
+    router.push('/jobs/post');
+  };
+
   const filteredJobs = jobs.filter((job: Job) => {
     const matchesSearch = !searchQuery || 
       job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -204,7 +217,7 @@ export default function JobsPage() {
           </div>
           <Button 
             className="bg-orange-500 hover:bg-orange-600 text-sm sm:text-base px-4 sm:px-6"
-            onClick={() => router.push('/jobs/post')}
+            onClick={handlePostClick}
           >
             Post a Job
           </Button>
@@ -430,6 +443,29 @@ export default function JobsPage() {
           rideTitle={selectedJob.title}
           rideId={selectedJob._id}
         />
+      )}
+      
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-xs w-full text-center animate-fade-in">
+            <h3 className="text-lg font-bold mb-2 text-gray-900">Login Required</h3>
+            <p className="text-gray-600 mb-6 text-sm">You must be logged in to post a job.</p>
+            <Button
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold py-2 rounded-xl mb-2"
+              onClick={() => { window.location.href = '/auth'; }}
+            >
+              Go to Login
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full py-2 rounded-xl"
+              onClick={() => setShowAuthModal(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );

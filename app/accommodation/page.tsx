@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { isAuthenticated } from '@/lib/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -32,6 +33,9 @@ import { useLocationData, useLocation } from '@/contexts/LocationContext';
 import { usePostsByCategory, usePosts } from '@/contexts/PostsContext';
 
 export default function AccommodationPage() {
+  // Authentication modal state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  
   // Global location state
   const locationData = useLocationData();
   const { updateRadius } = useLocation();
@@ -115,6 +119,15 @@ export default function AccommodationPage() {
     });
   }, [posts, selectedCity, searchTerm, filters]);
 
+  // Handle list property click with authentication check
+  const handleListClick = () => {
+    if (!isAuthenticated()) {
+      setShowAuthModal(true);
+      return;
+    }
+    router.push('/accommodation/list');
+  };
+
   const handleLocationFilterChange = useCallback((data: any) => {
     // Only update radius if it has changed and is a valid number
     if (data.radius !== undefined && data.radius !== locationData.radius) {
@@ -190,12 +203,10 @@ export default function AccommodationPage() {
               <p className="text-sm sm:text-base text-gray-600">Find your perfect home away from home</p>
             </div>
           </div>
-          <Link href="/accommodation/list">
-            <Button className="bg-orange-500 hover:bg-orange-600 text-sm sm:text-base px-4 sm:px-6">
-              <Plus className="h-4 w-4 mr-2" />
-              List Your Property
-            </Button>
-          </Link>
+          <Button onClick={handleListClick} className="bg-orange-500 hover:bg-orange-600 text-sm sm:text-base px-4 sm:px-6">
+            <Plus className="h-4 w-4 mr-2" />
+            List Your Property
+          </Button>
         </div>
 
         {/* Search and Filters */}
@@ -530,6 +541,29 @@ export default function AccommodationPage() {
           recipientId={selectedPost.author?._id || selectedPost.author}
           rideId={selectedPost._id}
         />
+      )}
+      
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-xs w-full text-center animate-fade-in">
+            <h3 className="text-lg font-bold mb-2 text-gray-900">Login Required</h3>
+            <p className="text-gray-600 mb-6 text-sm">You must be logged in to list accommodation.</p>
+            <Button
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold py-2 rounded-xl mb-2"
+              onClick={() => { window.location.href = '/auth'; }}
+            >
+              Go to Login
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full py-2 rounded-xl"
+              onClick={() => setShowAuthModal(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );

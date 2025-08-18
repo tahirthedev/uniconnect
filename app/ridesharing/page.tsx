@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { isAuthenticated } from '@/lib/auth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -43,6 +44,9 @@ interface Ride {
 }
 
 export default function RidesharingPage() {
+  // Authentication modal state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  
   // Global location state
   const locationData = useLocationData();
   const { toast } = useToast();
@@ -98,6 +102,15 @@ export default function RidesharingPage() {
       return ridePost?.location?.city === selectedCity;
     });
   }, [rides, selectedCity, ridesharingPosts]);
+
+  // Handle offer ride click with authentication check
+  const handleOfferClick = () => {
+    if (!isAuthenticated()) {
+      setShowAuthModal(true);
+      return;
+    }
+    window.location.href = '/ridesharing/offer';
+  };
 
   const getPriceValue = (price: number | { amount: number; type: string; currency: string }): number => {
     return typeof price === 'object' ? price.amount : price;
@@ -269,12 +282,10 @@ export default function RidesharingPage() {
             </div>
           </div>
           <div className="flex gap-3">
-            <Link href="/ridesharing/offer">
-              <Button className="bg-orange-500 hover:bg-orange-600 flex items-center gap-2 text-sm sm:text-base px-4 sm:px-6">
-                <Plus className="h-4 w-4" />
-                Request a Ride
-              </Button>
-            </Link>
+            <Button onClick={handleOfferClick} className="bg-orange-500 hover:bg-orange-600 flex items-center gap-2 text-sm sm:text-base px-4 sm:px-6">
+              <Plus className="h-4 w-4" />
+              Request a Ride
+            </Button>
           </div>
         </div>
 
@@ -437,6 +448,29 @@ export default function RidesharingPage() {
           recipientId={selectedRide.user?._id}
           rideId={selectedRide._id}
         />
+      )}
+      
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-xs w-full text-center animate-fade-in">
+            <h3 className="text-lg font-bold mb-2 text-gray-900">Login Required</h3>
+            <p className="text-gray-600 mb-6 text-sm">You must be logged in to offer a ride.</p>
+            <Button
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold py-2 rounded-xl mb-2"
+              onClick={() => { window.location.href = '/auth'; }}
+            >
+              Go to Login
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full py-2 rounded-xl"
+              onClick={() => setShowAuthModal(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
