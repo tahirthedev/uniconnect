@@ -171,7 +171,7 @@ export default function PrivacyPage() {
                 If you have any questions about this Privacy Policy or wish to exercise your rights, please contact us:
               </p>
               <p className="text-gray-700 leading-relaxed">
-                Email: <a href="mailto:swagbroindustries@gmail.com" className="text-orange-600 hover:text-orange-700 underline">swagbroindustries@gmail.com</a>
+                Email: <a href="mailto:contactsaydone@gmail.com" className="text-orange-600 hover:text-orange-700 underline">contactsaydone@gmail.com</a>
               </p>
               <p className="text-gray-700 leading-relaxed mt-4">
                 If you are not satisfied with our response, you have the right to lodge a complaint with the Information Commissioner's Office (ICO), the UK's data protection authority.

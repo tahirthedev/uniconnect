@@ -1055,10 +1055,10 @@ export default function HomePage() {
               <div className="mb-6">
                 <h4 className="text-sm font-semibold mb-2 text-orange-400">Contact</h4>
                 <a 
-                  href="mailto:swagbroindustries@gmail.com"
+                  href="mailto:contactsaydone@gmail.com"
                   className="text-gray-300 hover:text-orange-400 transition-colors duration-200 text-sm"
                 >
-                  swagbroindustries@gmail.com
+                  contactsaydone@gmail.com
                 </a>
               </div>
             </div>

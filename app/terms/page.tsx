@@ -171,7 +171,7 @@ export default function TermsPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">15. Contact Information</h2>
               <p className="text-gray-700 leading-relaxed">
                 For queries or support, contact:<br/>
-                Email: <a href="mailto:swagbroindustries@gmail.com" className="text-orange-600 hover:text-orange-700 underline">swagbroindustries@gmail.com</a>
+                Email: <a href="mailto:contactsaydone@gmail.com" className="text-orange-600 hover:text-orange-700 underline">contactsaydone@gmail.com</a>
               </p>
             </section>
 
