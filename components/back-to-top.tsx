@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { isAuthenticated } from '@/lib/auth';
 import { Plus, Briefcase, Car, Home, ShoppingBag, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -51,6 +52,17 @@ export default function CreatePostFab() {
     setIsMenuOpen(!isMenuOpen);
   };
 
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const handleServiceClick = (href: string) => {
+    if (!isAuthenticated()) {
+      setShowAuthModal(true);
+      setIsMenuOpen(false);
+    } else {
+      window.location.href = href;
+    }
+  };
+
   return (
     <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 lg:bottom-8 lg:right-8 z-50">
       {/* Service Menu - Card Grid Layout */}
@@ -68,28 +80,27 @@ export default function CreatePostFab() {
               {services.map((service, index) => {
                 const IconComponent = service.icon;
                 return (
-                  <Link key={service.href} href={service.href}>
-                    <div 
-                      className={`group relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br ${service.gradient} hover:${service.hoverGradient} transition-all duration-300 transform hover:scale-105 hover:${service.shadowColor} hover:shadow-xl cursor-pointer animate-slide-up`}
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      {/* Background Pattern */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-                      <div className="absolute top-0 right-0 w-12 h-12 sm:w-16 sm:h-16 bg-white/5 rounded-full -translate-y-6 sm:-translate-y-8 translate-x-6 sm:translate-x-8"></div>
-                      
-                      {/* Content */}
-                      <div className="relative p-3 sm:p-4 text-center text-white min-h-[80px] sm:min-h-[100px] flex flex-col items-center justify-center">
-                        <IconComponent className="w-6 h-6 sm:w-8 sm:h-8 mb-2 sm:mb-3 group-hover:scale-110 transition-transform duration-300" />
-                        <div className="text-xs sm:text-sm font-semibold leading-tight whitespace-pre-line">
-                          {service.name}
-                        </div>
+                  <div 
+                    key={service.href}
+                    className={`group relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br ${service.gradient} hover:${service.hoverGradient} transition-all duration-300 transform hover:scale-105 hover:${service.shadowColor} hover:shadow-xl cursor-pointer animate-slide-up`}
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                    onClick={() => handleServiceClick(service.href)}
+                  >
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+                    <div className="absolute top-0 right-0 w-12 h-12 sm:w-16 sm:h-16 bg-white/5 rounded-full -translate-y-6 sm:-translate-y-8 translate-x-6 sm:translate-x-8"></div>
+                    
+                    {/* Content */}
+                    <div className="relative p-3 sm:p-4 text-center text-white min-h-[80px] sm:min-h-[100px] flex flex-col items-center justify-center">
+                      <IconComponent className="w-6 h-6 sm:w-8 sm:h-8 mb-2 sm:mb-3 group-hover:scale-110 transition-transform duration-300" />
+                      <div className="text-xs sm:text-xs font-semibold leading-tight whitespace-pre-line">
+                        {service.name}
                       </div>
-                      
-                      {/* Hover Overlay */}
-                      <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
-                  </Link>
+                    
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </div>
                 );
               })}
             </div>
@@ -136,6 +147,28 @@ export default function CreatePostFab() {
           </div>
         )}
       </div>
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-xs w-full text-center animate-fade-in">
+            <h3 className="text-lg font-bold mb-2 text-gray-900">Login Required</h3>
+            <p className="text-gray-600 mb-6 text-sm">You must be logged in to create a post.</p>
+            <Button
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold py-2 rounded-xl mb-2"
+              onClick={() => { window.location.href = '/auth'; }}
+            >
+              Go to Login
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full py-2 rounded-xl"
+              onClick={() => setShowAuthModal(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
