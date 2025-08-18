@@ -19,6 +19,7 @@ interface Message {
     id?: string; // Add optional id field
     name: string;
     avatar?: string;
+    email?: string; // Add optional email field
   };
   messageBody: string;
   createdAt: string;
@@ -46,45 +47,72 @@ export default function MessagingModal({
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    _id?: string;
+    id?: string;
+    name?: string;
+    email?: string;
+    avatar?: string;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
-      // Get current user info from multiple possible sources
+      // Enhanced current user info detection for both Google Auth and custom auth
       let user = null;
       
-      // Try userInfo first
+      // Try userInfo first (most reliable for custom auth)
       const userInfo = localStorage.getItem('userInfo');
       if (userInfo) {
         try {
           user = JSON.parse(userInfo);
+          console.log('Found user in userInfo:', user);
         } catch (e) {
           console.error('Failed to parse userInfo:', e);
         }
       }
       
-      // Try user as fallback
+      // Try user as fallback (might be used by Google Auth)
       if (!user) {
         const userData = localStorage.getItem('user');
         if (userData) {
           try {
             user = JSON.parse(userData);
+            console.log('Found user in user:', user);
           } catch (e) {
             console.error('Failed to parse user:', e);
           }
         }
       }
       
-      // Try token to get user ID
+      // Try googleUser for Google Auth users
+      if (!user) {
+        const googleUser = localStorage.getItem('googleUser');
+        if (googleUser) {
+          try {
+            user = JSON.parse(googleUser);
+            console.log('Found user in googleUser:', user);
+          } catch (e) {
+            console.error('Failed to parse googleUser:', e);
+          }
+        }
+      }
+      
+      // Try token to get user ID as last resort
       if (!user) {
         const token = localStorage.getItem('token');
         if (token) {
           try {
             // Decode JWT token to get user ID
             const payload = JSON.parse(atob(token.split('.')[1]));
-            user = { _id: payload.userId || payload.id, name: 'Current User' };
+            user = { 
+              _id: payload.userId || payload.id || payload.sub, 
+              id: payload.userId || payload.id || payload.sub,
+              name: payload.name || 'Current User',
+              email: payload.email
+            };
+            console.log('Found user from token:', user);
           } catch (e) {
             console.error('Failed to decode token:', e);
           }
@@ -215,11 +243,28 @@ export default function MessagingModal({
               </div>
             ) : (
               messages.map((message, index) => {
-                // More robust current user detection
+                // Enhanced current user detection for both Google Auth and custom auth
                 const currentUserId = currentUser?._id || currentUser?.id;
                 const messageSenderId = message.sender?._id || message.sender?.id;
-                const isCurrentUser = currentUserId && messageSenderId && 
-                  (currentUserId === messageSenderId || currentUserId.toString() === messageSenderId.toString());
+                
+                // Multiple ways to check if it's the current user
+                let isCurrentUser = false;
+                
+                if (currentUserId && messageSenderId) {
+                  // Primary ID check
+                  isCurrentUser = currentUserId === messageSenderId || 
+                                 currentUserId.toString() === messageSenderId.toString();
+                }
+                
+                // Fallback: Check by name if IDs don't match (useful for Google Auth)
+                if (!isCurrentUser && currentUser?.name && message.sender?.name) {
+                  isCurrentUser = currentUser.name === message.sender.name;
+                }
+                
+                // Additional fallback: Check by email if available
+                if (!isCurrentUser && currentUser?.email && message.sender?.email) {
+                  isCurrentUser = currentUser.email === message.sender.email;
+                }
                 
                 const showDate = index === 0 || 
                   formatDate(messages[index - 1].createdAt) !== formatDate(message.createdAt);
