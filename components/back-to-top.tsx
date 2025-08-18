@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { isAuthenticated } from '@/lib/auth';
 import { Plus, Briefcase, Car, Home, ShoppingBag, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,9 @@ import Link from 'next/link';
 
 export default function CreatePostFab() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const fabRef = useRef<HTMLDivElement>(null);
 
   const services = [
     {
@@ -52,7 +55,28 @@ export default function CreatePostFab() {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: Event) => {
+      if (isMenuOpen && 
+          menuRef.current && 
+          fabRef.current &&
+          !menuRef.current.contains(event.target as Node) &&
+          !fabRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isMenuOpen]);
 
   const handleServiceClick = (href: string) => {
     if (!isAuthenticated()) {
@@ -67,7 +91,7 @@ export default function CreatePostFab() {
     <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 lg:bottom-8 lg:right-8 z-50">
       {/* Service Menu - Card Grid Layout */}
       {isMenuOpen && (
-        <div className="absolute bottom-16 sm:bottom-20 lg:bottom-24 right-0 animate-fade-in">
+        <div ref={menuRef} className="absolute bottom-16 sm:bottom-20 lg:bottom-24 right-0 animate-fade-in">
           <div className="bg-white/95 backdrop-blur-lg rounded-2xl sm:rounded-3xl shadow-2xl border border-gray-200/50 p-4 sm:p-6 min-w-[280px] sm:min-w-[320px] max-w-[calc(100vw-2rem)] sm:max-w-none">
             {/* Header */}
             <div className="text-center mb-4 sm:mb-6">
@@ -114,7 +138,7 @@ export default function CreatePostFab() {
       )}
       
       {/* Main FAB Button - Responsive sizing */}
-      <div className="relative">
+      <div ref={fabRef} className="relative">
         {/* Pulse Effect */}
         {!isMenuOpen && (
           <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-500 rounded-full animate-ping opacity-20"></div>
