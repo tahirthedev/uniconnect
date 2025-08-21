@@ -397,30 +397,30 @@ export default function JobsPage() {
                     </CardContent>
                   </div>
                   
-                  {/* Contact Button - Outside clickable area */}
-                  <div className="px-4 sm:px-6 pb-4 flex flex-col sm:flex-row gap-2">
+                  {/* Action buttons - Prevent stretching on desktop */}
+                  <div className="px-4 sm:px-6 pb-4 flex flex-col sm:flex-row gap-2 sm:justify-start">
                     <Button 
                       size="sm" 
-                      variant="outline"
-                      className="flex-1 w-full sm:w-auto"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/jobs/${job._id}`);
-                      }}
-                    >
-                      View Details
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      className="flex-1 w-full sm:w-auto bg-orange-500 hover:bg-orange-600"
+                      className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedJob(job);
                         setShowMessagingModal(true);
                       }}
                     >
-                      <MessageCircle className="h-4 w-4 mr-1" />
-                      <span className="truncate">Contact Employer</span>
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Contact Employer
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/jobs/${job._id}`);
+                      }}
+                    >
+                      View Details
                     </Button>
                   </div>
                 </Card>
