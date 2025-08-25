@@ -16,6 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { UploadedImage } from '@/lib/post-utils';
 
 interface SummaryStepProps {
   data: any;
@@ -100,7 +101,7 @@ export default function SummaryStep({ data, onSubmit, isSubmitting }: SummarySte
             <div className="relative">
               {data.images && data.images.length > 0 ? (
                 <img
-                  src={URL.createObjectURL(data.images[0])}
+                  src={(data.images[0] as UploadedImage).url}
                   alt="Property"
                   className="w-full h-64 object-cover"
                 />

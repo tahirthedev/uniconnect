@@ -111,7 +111,17 @@ export default function PropertyDetailPage() {
     try {
       const response = await apiClient.getPost(propertyId);
       if (response && response.post) {
-        setProperty(response.post);
+        // Transform images to ensure consistent format
+        const transformedPost = {
+          ...response.post,
+          images: response.post.images && response.post.images.length > 0 
+            ? response.post.images.map((img: any) => ({
+                url: typeof img === 'string' ? img : img.url,
+                alt: typeof img === 'object' ? img.filename : undefined
+              }))
+            : []
+        };
+        setProperty(transformedPost);
       } else {
         setError('Property not found');
       }

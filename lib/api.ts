@@ -213,6 +213,71 @@ export class ApiClient {
       body: JSON.stringify(postData),
     });
   }
+
+  // Image upload methods
+  async requestPresignedUrls(files: { filename: string; contentType: string; size: number }[]) {
+    return this.request('/api/uploads/presign', {
+      method: 'POST',
+      body: JSON.stringify({ files }),
+    });
+  }
+
+  async confirmUploads(uploads: any[], postId?: string) {
+    return this.request('/api/uploads/complete', {
+      method: 'POST',
+      body: JSON.stringify({ uploads, postId }),
+    });
+  }
+
+  async deleteUpload(key: string) {
+    return this.request(`/api/uploads/${encodeURIComponent(key)}`, {
+      method: 'DELETE',
+    });
+  }
+
+    // Upload file directly to R2 using presigned URL
+  async uploadFileToR2(presignedUrl: string, file: File, onProgress?: (progress: number) => void) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable && onProgress) {
+          const progress = (event.loaded / event.total) * 100;
+          onProgress(progress);
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(xhr.response);
+        } else {
+          console.error('Upload failed:', {
+            status: xhr.status,
+            statusText: xhr.statusText,
+            response: xhr.response,
+            responseText: xhr.responseText
+          });
+          reject(new Error(`Upload failed with status: ${xhr.status} - ${xhr.statusText}`));
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        reject(new Error(`Upload failed: Network error or CORS issue. Status: ${xhr.status}, ReadyState: ${xhr.readyState}`));
+      });
+
+      xhr.addEventListener('abort', () => {
+        reject(new Error('Upload aborted'));
+      });
+
+      xhr.addEventListener('timeout', () => {
+        reject(new Error('Upload timeout'));
+      });
+
+      xhr.open('PUT', presignedUrl);
+      xhr.setRequestHeader('Content-Type', file.type);
+      xhr.send(file);
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

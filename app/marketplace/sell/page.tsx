@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, ShoppingBag, Upload, MapPin } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Upload, MapPin, X } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import { usePosts } from '@/contexts/PostsContext';
+import { uploadImages, UploadProgress, UploadedImage } from '@/lib/post-utils';
 
 interface SellItemForm {
   title: string;
@@ -20,7 +21,6 @@ interface SellItemForm {
   city: string;
   contactMethod: string;
   phoneNumber: string;
-  images: File[];
 }
 
 export default function SellItemPage() {
@@ -28,6 +28,8 @@ export default function SellItemPage() {
   const { toast } = useToast();
   const { addPost, forceRefreshPosts } = usePosts();
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [formData, setFormData] = useState<SellItemForm>({
     title: '',
     description: '',
@@ -37,8 +39,7 @@ export default function SellItemPage() {
     condition: '',
     city: '',
     contactMethod: 'message',
-    phoneNumber: '',
-    images: []
+    phoneNumber: ''
   });
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -91,18 +92,34 @@ export default function SellItemPage() {
     setValidationErrors(prev => prev.filter(error => error !== field));
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      setFormData(prev => ({ ...prev, images: [...prev.images, ...files].slice(0, 5) }));
+    if (files.length === 0) return;
+
+    try {
+      const newImages = await uploadImages(files, setUploadProgress);
+      setUploadedImages(prev => [...prev, ...newImages]);
+      
+      toast({
+        title: "Images uploaded successfully",
+        description: `${files.length} image(s) uploaded to cloud storage.`,
+      });
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      toast({
+        title: "Upload failed", 
+        description: error instanceof Error ? error.message : "Failed to upload images",
+        variant: "destructive",
+      });
     }
   };
 
   const removeImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index)
-    }));
+    const imageToRemove = uploadedImages[index];
+    setUploadedImages(prev => prev.filter((_, i) => i !== index));
+    
+    // Optionally delete from R2 (be careful not to delete if used elsewhere)
+    // deleteImage(imageToRemove.key).catch(console.error);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -148,6 +165,7 @@ export default function SellItemPage() {
           city: formData.city,
           country: 'UK'
         },
+        images: uploadedImages, // Use uploaded images from R2
         details: {
           marketplace: {
             category: formData.category,
@@ -162,8 +180,7 @@ export default function SellItemPage() {
           condition: formData.condition,
           originalPrice: formData.originalPrice,
           contactMethod: formData.contactMethod,
-          phoneNumber: formData.phoneNumber,
-          images: formData.images
+          phoneNumber: formData.phoneNumber
         }
       };
 
@@ -453,27 +470,72 @@ export default function SellItemPage() {
                   accept="image/*"
                   onChange={handleImageUpload}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  disabled={loading}
                 />
-                <p className="text-xs text-gray-500 mt-1">Upload up to 5 images. Good photos help sell faster!</p>
+                <p className="text-xs text-gray-500 mt-1">Upload up to 6 images (5MB max each). JPEG, PNG, WebP supported.</p>
                 
-                {formData.images.length > 0 && (
-                  <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-2">
-                    {formData.images.map((file, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt={`Upload ${index + 1}`}
-                          className="w-full h-20 object-cover rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
-                        >
-                          ×
-                        </button>
+                {/* Upload Progress */}
+                {uploadProgress.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {uploadProgress.map((progress, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <div className="flex-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="truncate">{progress.filename}</span>
+                            <span className={`
+                              ${progress.status === 'completed' ? 'text-green-600' : 
+                                progress.status === 'error' ? 'text-red-600' : 
+                                'text-gray-600'}
+                            `}>
+                              {progress.status === 'completed' ? '✓' : 
+                               progress.status === 'error' ? '✗' : 
+                               `${Math.round(progress.progress)}%`}
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full transition-all duration-300 ${
+                                progress.status === 'completed' ? 'bg-green-500' :
+                                progress.status === 'error' ? 'bg-red-500' :
+                                'bg-orange-500'
+                              }`}
+                              style={{ width: `${progress.progress}%` }}
+                            />
+                          </div>
+                          {progress.status === 'error' && progress.error && (
+                            <p className="text-xs text-red-600 mt-1">{progress.error}</p>
+                          )}
+                        </div>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Uploaded Images */}
+                {uploadedImages.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Uploaded Images</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                      {uploadedImages.map((image, index) => (
+                        <div key={image.key} className="relative group">
+                          <img
+                            src={image.url}
+                            alt={image.filename}
+                            className="w-full h-20 object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg truncate">
+                            {image.filename}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

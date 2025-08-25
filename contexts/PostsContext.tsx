@@ -49,6 +49,7 @@ interface Post {
     preferredMethod: string;
   };
   details?: any;
+  images?: Array<string | { url: string; key?: string; filename?: string; contentType?: string; size?: number }>;
   status: string;
   createdAt: string;
   updatedAt: string;

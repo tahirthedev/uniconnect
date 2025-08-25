@@ -51,7 +51,7 @@ interface MarketplaceItem {
     category?: string;
     features?: string[];
   };
-  images?: string[];
+  images?: Array<string | { url: string; key?: string; filename?: string; contentType?: string; size?: number }>;
   author: {
     _id: string;
     name: string;
@@ -197,9 +197,24 @@ export default function MarketplaceItemPage() {
             {/* Item Images */}
             <Card>
               <CardContent className="p-0">
-                <div className="h-64 bg-gradient-to-br from-pink-100 to-pink-200 rounded-t-lg flex items-center justify-center">
-                  <ShoppingBag className="h-16 w-16 text-pink-500" />
-                </div>
+                {item.images && item.images.length > 0 ? (
+                  <div className="relative">
+                    <img
+                      src={typeof item.images[0] === 'string' ? item.images[0] : item.images[0].url}
+                      alt={item.title}
+                      className="w-full h-64 object-cover rounded-t-lg"
+                    />
+                    {item.images.length > 1 && (
+                      <Badge className="absolute top-2 right-2 bg-black/70 text-white">
+                        +{item.images.length - 1} more
+                      </Badge>
+                    )}
+                  </div>
+                ) : (
+                  <div className="h-64 bg-gradient-to-br from-pink-100 to-pink-200 rounded-t-lg flex items-center justify-center">
+                    <ShoppingBag className="h-16 w-16 text-pink-500" />
+                  </div>
+                )}
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="text-3xl font-bold text-pink-600">

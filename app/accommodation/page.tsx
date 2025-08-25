@@ -59,24 +59,32 @@ export default function AccommodationPage() {
 
   // Transform posts into accommodation format
   const posts = useMemo(() => {
-    return accommodationPosts.map(post => ({
-      _id: post._id,
-      title: post.title,
-      description: post.description,
-      price: post.price,
-      location: post.location,
-      details: post.details,
-      author: post.author,
-      contact: post.contact,
-      status: post.status,
-      createdAt: post.createdAt,
-      updatedAt: post.updatedAt,
-      views: post.views,
-      likeCount: post.likeCount,
-      isLiked: post.isLiked,
-      distance: post.distance,
-      distanceKm: post.distanceKm
-    }));
+    return accommodationPosts.map(post => {
+      // Transform images like in marketplace
+      const accommodationImages = post.images && post.images.length > 0 
+        ? post.images.map(img => typeof img === 'string' ? img : img.url) // Handle both string URLs and image objects
+        : []; // Empty array for posts without images
+      
+      return {
+        _id: post._id,
+        title: post.title,
+        description: post.description,
+        price: post.price,
+        location: post.location,
+        details: post.details,
+        author: post.author,
+        contact: post.contact,
+        status: post.status,
+        createdAt: post.createdAt,
+        updatedAt: post.updatedAt,
+        views: post.views,
+        likeCount: post.likeCount,
+        isLiked: post.isLiked,
+        distance: post.distance,
+        distanceKm: post.distanceKm,
+        images: accommodationImages // Add transformed images
+      };
+    });
   }, [accommodationPosts]);
 
   // Get available cities from accommodation posts
@@ -397,7 +405,7 @@ export default function AccommodationPage() {
                   <div className="relative">
                     {post.images && post.images.length > 0 ? (
                       <img
-                        src={post.images[0].url}
+                        src={post.images[0]}
                         alt={post.title}
                         className="w-full h-48 object-cover"
                       />

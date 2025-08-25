@@ -519,12 +519,22 @@ export default function HomePage() {
                             </div>
                           </div>
                           
-                          {/* Category Icon Display */}
-                          <div className={`h-32 ${getCategoryIcon(post.category).bgColor} relative flex items-center justify-center`}>
-                            {(() => {
-                              const IconComponent = getCategoryIcon(post.category).icon;
-                              return <IconComponent className={`w-16 h-16 ${getCategoryIcon(post.category).color}`} />;
-                            })()}
+                          {/* Post Image or Category Icon Display */}
+                          <div className="h-32 relative overflow-hidden">
+                            {post.images && post.images.length > 0 ? (
+                              <img
+                                src={typeof post.images[0] === 'string' ? post.images[0] : post.images[0].url}
+                                alt={post.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className={`h-full ${getCategoryIcon(post.category).bgColor} flex items-center justify-center`}>
+                                {(() => {
+                                  const IconComponent = getCategoryIcon(post.category).icon;
+                                  return <IconComponent className={`w-16 h-16 ${getCategoryIcon(post.category).color}`} />;
+                                })()}
+                              </div>
+                            )}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
                           </div>
                         </div>

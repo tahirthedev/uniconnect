@@ -14,6 +14,7 @@ import PreferencesStep from '@/components/accommodation/steps/preferences-step';
 import DescriptionStep from '@/components/accommodation/steps/description-step';
 import SummaryStep from '@/components/accommodation/steps/summary-step';
 import { apiClient } from '@/lib/api';
+import { UploadedImage } from '@/lib/post-utils';
 
 interface PropertyListing {
   // Step 1: Property Type
@@ -67,7 +68,7 @@ interface PropertyListing {
   
   // Step 5: Description & Images
   description: string;
-  images: File[];
+  images: UploadedImage[];
   
   // Step 6: Additional info
   virtualTourUrl: string;
@@ -243,6 +244,7 @@ export default function ListingWizard() {
         title: `${formData.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} - ${formData.details.city || 'Unknown City'}`,
         content: formData.description,
         description: formData.description, // Backend requires this field
+        images: formData.images, // Use uploaded R2 images
         price: {
           amount: formData.pricing.rent,
           type: formData.pricing.schedule,
@@ -295,8 +297,7 @@ export default function ListingWizard() {
           
           // Additional info
           virtualTourUrl: formData.virtualTourUrl,
-          contactPreference: formData.contactPreference,
-          images: formData.images
+          contactPreference: formData.contactPreference
         }
       };
 

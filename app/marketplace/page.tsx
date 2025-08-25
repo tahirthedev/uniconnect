@@ -74,22 +74,28 @@ export default function MarketplacePage() {
 
   // Transform posts into products format
   const products = useMemo(() => {
-    return marketplacePosts.map(post => ({
-      id: post._id,
-      title: post.title,
-      price: post.price ? `£${post.price.amount}` : 'Contact for price',
-      originalPrice: post.details?.marketplace?.originalPrice ? `£${post.details.marketplace.originalPrice}` : undefined,
-      seller: post.author.name,
-      rating: 4.8, // Default rating
-      location: post.location.city,
-      posted: new Date(post.createdAt).toLocaleDateString(),
-      images: ["/placeholder.svg?height=300&width=400"],
-      condition: post.details?.marketplace?.condition || 'Good',
-      category: post.details?.marketplace?.category || 'General',
-      description: post.description,
-      verified: true,
-      featured: !!(post.likeCount && post.likeCount > 10) // Convert to boolean
-    }));
+    return marketplacePosts.map(post => {
+      const productImages = post.images && post.images.length > 0 
+        ? post.images.map(img => typeof img === 'string' ? img : img.url) // Handle both string URLs and image objects
+        : ["/placeholder.svg?height=300&width=400"]; // Fallback for posts without images
+      
+      return {
+        id: post._id,
+        title: post.title,
+        price: post.price ? `£${post.price.amount}` : 'Contact for price',
+        originalPrice: post.details?.marketplace?.originalPrice ? `£${post.details.marketplace.originalPrice}` : undefined,
+        seller: post.author.name,
+        rating: 4.8, // Default rating
+        location: post.location.city,
+        posted: new Date(post.createdAt).toLocaleDateString(),
+        images: productImages,
+        condition: post.details?.marketplace?.condition || 'Good',
+        category: post.details?.marketplace?.category || 'General',
+        description: post.description,
+        verified: true,
+        featured: !!(post.likeCount && post.likeCount > 10) // Convert to boolean
+      };
+    });
   }, [marketplacePosts]);
 
   // Get available cities from marketplace posts

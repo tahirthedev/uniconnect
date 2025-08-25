@@ -22,7 +22,13 @@ const postSchema = new mongoose.Schema({
     trim: true
   },
   images: [{
-    url: { type: String, required: true },
+    key: { type: String }, // R2 object key - make optional for backward compatibility
+    url: { type: String, required: true }, // Public URL
+    filename: { type: String }, // Original filename - make optional
+    contentType: { type: String }, // MIME type - make optional
+    size: { type: Number }, // File size in bytes - make optional
+    width: { type: Number }, // Image width in pixels
+    height: { type: Number }, // Image height in pixels
     caption: { type: String, default: '' },
     isPrimary: { type: Boolean, default: false }
   }],

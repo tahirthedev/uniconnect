@@ -42,6 +42,7 @@ interface Post {
     name: string;
     email: string;
   };
+  images?: Array<string | { url: string; key?: string; filename?: string; contentType?: string; size?: number }>;
   createdAt: string;
   distance?: number;
   distanceKm?: number;
@@ -385,6 +386,22 @@ export default function PostsPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
+                    {/* Post Images */}
+                    {post.images && post.images.length > 0 && (
+                      <div className="mb-4 -mx-6 -mt-3 relative">
+                        <img
+                          src={typeof post.images[0] === 'string' ? post.images[0] : post.images[0].url}
+                          alt={post.title}
+                          className="w-full h-48 object-cover"
+                        />
+                        {post.images.length > 1 && (
+                          <Badge className="absolute top-2 right-2 bg-black/70 text-white text-xs">
+                            +{post.images.length - 1} more
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                    
                     <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
                       {post.title}
                     </h3>

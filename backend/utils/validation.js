@@ -4,6 +4,8 @@ const { body, param, query, validationResult } = require('express-validator');
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('🚨 VALIDATION ERRORS:', JSON.stringify(errors.array(), null, 2));
+    console.log('🚨 REQUEST BODY:', JSON.stringify(req.body, null, 2));
     return res.status(400).json({
       success: false,
       message: 'Validation errors',
@@ -126,10 +128,29 @@ const postValidations = {
       .optional()
       .isArray()
       .withMessage('Images must be an array'),
+    body('images.*.key')
+      .optional()
+      .isString()
+      .isLength({ min: 1 })
+      .withMessage('Each image must have a valid key'),
     body('images.*.url')
       .optional()
-      .isURL()
-      .withMessage('Each image must have a valid URL'),
+      .isString()
+      .isLength({ min: 1 })
+      .withMessage('Each image must have a URL'),
+    body('content')
+      .optional()
+      .trim()
+      .isLength({ max: 2000 })
+      .withMessage('Content must be less than 2000 characters'),
+    body('details')
+      .optional()
+      .isObject()
+      .withMessage('Details must be an object'),
+    body('metadata')
+      .optional()
+      .isObject()
+      .withMessage('Metadata must be an object'),
     handleValidationErrors
   ],
   

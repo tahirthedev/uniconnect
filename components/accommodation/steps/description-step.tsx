@@ -12,6 +12,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { uploadImages, UploadProgress, UploadedImage } from '@/lib/post-utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface DescriptionStepProps {
   data: any;
@@ -21,7 +23,10 @@ interface DescriptionStepProps {
 
 export default function DescriptionStep({ data, updateData, validationErrors = [] }: DescriptionStepProps) {
   const [dragActive, setDragActive] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const handleDescriptionChange = (description: string) => {
     updateData({ description });
@@ -60,10 +65,34 @@ export default function DescriptionStep({ data, updateData, validationErrors = [
     handleFiles(files);
   };
 
-  const handleFiles = (newFiles: File[]) => {
-    const currentImages = data.images || [];
-    const updatedImages = [...currentImages, ...newFiles];
-    updateData({ images: updatedImages });
+  const handleFiles = async (newFiles: File[]) => {
+    if (newFiles.length === 0) return;
+    
+    setUploading(true);
+    try {
+      // Upload images to R2
+      const uploadedImages = await uploadImages(newFiles, setUploadProgress);
+      
+      // Add uploaded images to current images
+      const currentImages = data.images || [];
+      const updatedImages = [...currentImages, ...uploadedImages];
+      updateData({ images: updatedImages });
+      
+      toast({
+        title: "Images uploaded successfully",
+        description: `${newFiles.length} image(s) uploaded to cloud storage.`,
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Failed to upload images",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+      setUploadProgress([]);
+    }
   };
 
   const removeImage = (index: number) => {
@@ -165,12 +194,13 @@ export default function DescriptionStep({ data, updateData, validationErrors = [
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
               className="mb-2"
+              disabled={uploading}
             >
               <Upload className="h-4 w-4 mr-2" />
-              Choose Files
+              {uploading ? 'Uploading...' : 'Choose Files'}
             </Button>
             <p className="text-xs text-gray-500">
-              Supported formats: JPG, PNG, WEBP (Max 10MB each)
+              Supported formats: JPG, PNG, WEBP (Max 5MB each)
             </p>
             
             <input
@@ -183,6 +213,26 @@ export default function DescriptionStep({ data, updateData, validationErrors = [
             />
           </div>
 
+          {/* Upload Progress */}
+          {uploadProgress.length > 0 && (
+            <div className="space-y-2">
+              {uploadProgress.map((progress, index) => (
+                <div key={index} className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">{progress.filename}</span>
+                    <span className="text-gray-500">{Math.round(progress.progress)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-orange-600 h-2 rounded-full transition-all duration-300" 
+                      style={{ width: `${progress.progress}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Image Preview */}
           {(data.images || []).length > 0 && (
             <div>
@@ -190,11 +240,11 @@ export default function DescriptionStep({ data, updateData, validationErrors = [
                 Uploaded Photos ({(data.images || []).length})
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {(data.images || []).map((file: File, index: number) => (
+                {(data.images || []).map((image: UploadedImage, index: number) => (
                   <div key={index} className="relative group">
                     <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                       <img
-                        src={URL.createObjectURL(file)}
+                        src={image.url}
                         alt={`Property photo ${index + 1}`}
                         className="w-full h-full object-cover"
                       />

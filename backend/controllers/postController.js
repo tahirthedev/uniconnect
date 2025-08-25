@@ -551,6 +551,23 @@ const deletePost = async (req, res) => {
       });
     }
 
+    // Delete associated images from R2 storage
+    if (post.images && post.images.length > 0) {
+      const r2Storage = require('../utils/storage-r2');
+      
+      for (const image of post.images) {
+        if (image.key) {
+          try {
+            await r2Storage.deleteObject(image.key);
+            console.log(`Deleted R2 object: ${image.key}`);
+          } catch (error) {
+            console.error(`Failed to delete R2 object ${image.key}:`, error);
+            // Continue with post deletion even if R2 deletion fails
+          }
+        }
+      }
+    }
+
     await Post.findByIdAndDelete(postId);
 
     // Update user's post count
