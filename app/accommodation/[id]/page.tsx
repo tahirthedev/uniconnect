@@ -291,68 +291,94 @@ export default function PropertyDetailPage() {
         {/* Image Gallery */}
         <div className="relative mb-8">
           {property.images && property.images.length > 0 ? (
-            <div className="relative h-96 md:h-[500px] rounded-lg overflow-hidden">
-              <img
-                src={property.images[currentImageIndex]?.url}
-                alt={property.images[currentImageIndex]?.alt || property.title}
-                className="w-full h-full object-cover"
-              />
-              
-              {/* Image Navigation */}
-              {property.images.length > 1 && (
-                <>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
-                    onClick={prevImage}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
-                    onClick={nextImage}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  
-                  {/* Image Counter */}
-                  <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-                    {currentImageIndex + 1} / {property.images.length}
-                  </div>
-                </>
-              )}
-              
-              {/* Action Buttons */}
-              <div className="absolute top-4 right-4 flex gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="bg-white/80 hover:bg-white"
-                  onClick={toggleFavorite}
-                >
-                  <Heart className={`h-4 w-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="bg-white/80 hover:bg-white"
-                >
-                  <Share2 className="h-4 w-4" />
-                </Button>
+            <div className="space-y-4">
+              {/* Main Image */}
+              <div className="relative h-96 md:h-[500px] rounded-lg overflow-hidden">
+                <img
+                  src={property.images[currentImageIndex]?.url}
+                  alt={property.images[currentImageIndex]?.alt || property.title}
+                  className="w-full h-full object-cover"
+                />
+                
+                {/* Image Navigation */}
                 {property.images.length > 1 && (
+                  <>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
+                      onClick={prevImage}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
+                      onClick={nextImage}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    
+                    {/* Image Counter */}
+                    <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                      {currentImageIndex + 1} / {property.images.length}
+                    </div>
+                  </>
+                )}
+                
+                {/* Action Buttons */}
+                <div className="absolute top-4 right-4 flex gap-2">
                   <Button
                     variant="secondary"
                     size="sm"
                     className="bg-white/80 hover:bg-white"
-                    onClick={() => setShowFullGallery(true)}
+                    onClick={toggleFavorite}
                   >
-                    <Maximize2 className="h-4 w-4" />
+                    <Heart className={`h-4 w-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
                   </Button>
-                )}
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="bg-white/80 hover:bg-white"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                  {property.images.length > 1 && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="bg-white/80 hover:bg-white"
+                      onClick={() => setShowFullGallery(true)}
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
+              
+              {/* Thumbnail Row */}
+              {property.images.length > 1 && (
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  {property.images.map((image, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentImageIndex(index)}
+                      className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden transition-all ${
+                        index === currentImageIndex 
+                          ? 'border-orange-500 shadow-lg' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <img
+                        src={image.url}
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div className="h-96 md:h-[500px] bg-gray-200 rounded-lg flex items-center justify-center">

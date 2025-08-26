@@ -23,7 +23,9 @@ import {
   CheckCircle,
   Star,
   Heart,
-  Share2
+  Share2,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import MessagingModal from '@/components/messaging-modal';
@@ -74,6 +76,7 @@ export default function MarketplaceItemPage() {
   const [item, setItem] = useState<MarketplaceItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [messagingModal, setMessagingModal] = useState({
     isOpen: false,
     recipientName: '',
@@ -130,6 +133,26 @@ export default function MarketplaceItemPage() {
       month: 'long',
       year: 'numeric'
     });
+  };
+
+  const nextImage = () => {
+    if (item?.images && item.images.length > 0) {
+      setCurrentImageIndex((prev) => 
+        prev === (item.images?.length || 0) - 1 ? 0 : prev + 1
+      );
+    }
+  };
+
+  const prevImage = () => {
+    if (item?.images && item.images.length > 0) {
+      setCurrentImageIndex((prev) => 
+        prev === 0 ? (item.images?.length || 0) - 1 : prev - 1
+      );
+    }
+  };
+
+  const goToImage = (index: number) => {
+    setCurrentImageIndex(index);
   };
 
   if (loading) {
@@ -199,15 +222,67 @@ export default function MarketplaceItemPage() {
               <CardContent className="p-0">
                 {item.images && item.images.length > 0 ? (
                   <div className="relative">
-                    <img
-                      src={typeof item.images[0] === 'string' ? item.images[0] : item.images[0].url}
-                      alt={item.title}
-                      className="w-full h-64 object-cover rounded-t-lg"
-                    />
+                    {/* Main Image */}
+                    <div className="relative h-64 overflow-hidden rounded-t-lg">
+                      <img
+                        src={typeof item.images[currentImageIndex] === 'string' 
+                          ? item.images[currentImageIndex] 
+                          : (item.images[currentImageIndex] as any)?.url}
+                        alt={`${item.title} - Image ${currentImageIndex + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      
+                      {/* Navigation Arrows */}
+                      {item.images.length > 1 && (
+                        <>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
+                            onClick={prevImage}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
+                            onClick={nextImage}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                      
+                      {/* Image Counter */}
+                      {item.images.length > 1 && (
+                        <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-sm">
+                          {currentImageIndex + 1} / {item.images.length}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Thumbnail Row */}
                     {item.images.length > 1 && (
-                      <Badge className="absolute top-2 right-2 bg-black/70 text-white">
-                        +{item.images.length - 1} more
-                      </Badge>
+                      <div className="flex gap-2 p-2 bg-gray-50 overflow-x-auto">
+                        {item.images.map((image, index) => (
+                          <button
+                            key={index}
+                            onClick={() => goToImage(index)}
+                            className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden ${
+                              index === currentImageIndex 
+                                ? 'border-pink-500' 
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <img
+                              src={typeof image === 'string' ? image : (image as any)?.url}
+                              alt={`Thumbnail ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
                     )}
                   </div>
                 ) : (
