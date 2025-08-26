@@ -55,16 +55,16 @@ class R2Storage {
     }
   }
 
-  // Generate simple public URL - use backend proxy for now
+  // Generate simple public URL - use direct R2 URL for production
   generatePublicUrl(key) {
-    // Try backend proxy first, but add fallback for direct R2
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
-    return `${backendUrl}/api/images/${encodeURIComponent(key)}`;
+    // Use direct R2 public URL (works in both dev and production)
+    const publicUrl = process.env.R2_PUBLIC_URL || `https://${process.env.R2_BUCKET}.${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+    return `${publicUrl}/${encodeURIComponent(key)}`;
   }
 
   // Generate direct R2 URL as fallback
   generateDirectUrl(key) {
-    const bucketName = process.env.R2_BUCKET_NAME;
+    const bucketName = process.env.R2_BUCKET;
     const accountId = process.env.R2_ACCOUNT_ID;
     
     if (process.env.R2_CUSTOM_DOMAIN) {
@@ -79,6 +79,7 @@ class R2Storage {
   getPublicUrl(key) {
     return this.generatePublicUrl(key);
   }
+  
   async deleteObject(key) {
     try {
       const command = new DeleteObjectCommand({
@@ -91,11 +92,6 @@ class R2Storage {
       console.error('Error deleting object:', error);
       return false;
     }
-  }
-
-  // Generate public URL for object
-  getPublicUrl(key) {
-    return `${process.env.R2_ENDPOINT}/${this.bucket}/${key}`;
   }
 
   // Generate structured key for images
