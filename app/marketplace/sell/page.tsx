@@ -42,7 +42,107 @@ export default function SellItemPage() {
     phoneNumber: ''
   });
 
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Validation functions
+  const validateTitle = (title: string): string => {
+    if (!title.trim()) return 'Title is required';
+    if (title.trim().length < 5) return 'Title must be at least 5 characters';
+    if (title.trim().length > 200) return 'Title must be less than 200 characters';
+    return '';
+  };
+
+  const validateDescription = (description: string): string => {
+    if (!description.trim()) return 'Description is required';
+    if (description.trim().length < 10) return 'Description must be at least 10 characters';
+    if (description.trim().length > 2000) return 'Description must be less than 2000 characters';
+    return '';
+  };
+
+  const validateCity = (city: string): string => {
+    if (!city.trim()) return 'City is required';
+    if (city.trim().length < 2) return 'City must be at least 2 characters';
+    if (city.trim().length > 100) return 'City must be less than 100 characters';
+    return '';
+  };
+
+  const validatePrice = (price: number): string => {
+    if (price < 0) return 'Price must be a positive number';
+    if (price === 0) return 'Price is required';
+    return '';
+  };
+
+  const validateCategory = (category: string): string => {
+    if (!category) return 'Category is required';
+    return '';
+  };
+
+  const validateCondition = (condition: string): string => {
+    if (!condition) return 'Condition is required';
+    return '';
+  };
+
+  const validatePhoneNumber = (phoneNumber: string, contactMethod: string): string => {
+    if (contactMethod === 'phone' && !phoneNumber.trim()) {
+      return 'Phone number is required when contact method is phone';
+    }
+    if (phoneNumber && !/^[\+]?[\d\s\-\(\)]{10,}$/.test(phoneNumber.replace(/\s/g, ''))) {
+      return 'Please enter a valid phone number';
+    }
+    return '';
+  };
+
+  // Real-time validation on field change
+  const validateField = (fieldName: keyof SellItemForm, value: any) => {
+    let error = '';
+    
+    switch (fieldName) {
+      case 'title':
+        error = validateTitle(value);
+        break;
+      case 'description':
+        error = validateDescription(value);
+        break;
+      case 'city':
+        error = validateCity(value);
+        break;
+      case 'price':
+        error = validatePrice(value);
+        break;
+      case 'category':
+        error = validateCategory(value);
+        break;
+      case 'condition':
+        error = validateCondition(value);
+        break;
+      case 'phoneNumber':
+        error = validatePhoneNumber(value, formData.contactMethod);
+        break;
+    }
+
+    setValidationErrors(prev => ({
+      ...prev,
+      [fieldName]: error
+    }));
+  };
+
+  // Validate all fields
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    errors.title = validateTitle(formData.title);
+    errors.description = validateDescription(formData.description);
+    errors.city = validateCity(formData.city);
+    errors.price = validatePrice(formData.price);
+    errors.category = validateCategory(formData.category);
+    errors.condition = validateCondition(formData.condition);
+    errors.phoneNumber = validatePhoneNumber(formData.phoneNumber, formData.contactMethod);
+
+    setValidationErrors(errors);
+    
+    // Return true if no errors
+    return !Object.values(errors).some(error => error !== '');
+  };
 
   const categories = [
     { value: 'Electronics', label: 'Electronics' },
@@ -70,26 +170,10 @@ export default function SellItemPage() {
     { value: 'both', label: 'Message & Phone' }
   ];
 
-  const validateForm = (): { isValid: boolean; errors: string[] } => {
-    const errors: string[] = [];
-    
-    if (!formData.title.trim()) errors.push('title');
-    if (!formData.description.trim()) errors.push('description');
-    if (!formData.price || formData.price <= 0) errors.push('price');
-    if (!formData.category) errors.push('category');
-    if (!formData.condition) errors.push('condition');
-    if (!formData.city.trim()) errors.push('city');
-    if (formData.contactMethod === 'phone' || formData.contactMethod === 'whatsapp' || formData.contactMethod === 'both') {
-      if (!formData.phoneNumber.trim()) errors.push('phoneNumber');
-    }
-    
-    return { isValid: errors.length === 0, errors };
-  };
-
   const handleInputChange = (field: keyof SellItemForm, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear validation error for this field
-    setValidationErrors(prev => prev.filter(error => error !== field));
+    // Validate field in real-time
+    validateField(field, value);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,12 +209,11 @@ export default function SellItemPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const validation = validateForm();
-    if (!validation.isValid) {
-      setValidationErrors(validation.errors);
+    const isValid = validateForm();
+    if (!isValid) {
       toast({
-        title: "Please complete required fields",
-        description: "The highlighted fields need to be filled before posting your item.",
+        title: "Please fix validation errors",
+        description: "Please correct the highlighted fields before submitting.",
         variant: "destructive",
       });
       return;
@@ -245,14 +328,14 @@ export default function SellItemPage() {
                   value={formData.title}
                   onChange={(e) => handleInputChange('title', e.target.value)}
                   className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
-                    validationErrors.includes('title') 
+                    validationErrors.title 
                       ? 'border-red-500 bg-red-50' 
                       : 'border-gray-300'
                   }`}
                   placeholder="e.g., iPhone 14 Pro Max 256GB Space Black"
                 />
-                {validationErrors.includes('title') && (
-                  <p className="text-sm text-red-600 mt-1">Item title is required</p>
+                {validationErrors.title && (
+                  <p className="text-sm text-red-600 mt-1">{validationErrors.title}</p>
                 )}
               </div>
 
@@ -264,16 +347,22 @@ export default function SellItemPage() {
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
-                    validationErrors.includes('description') 
+                    validationErrors.description 
                       ? 'border-red-500 bg-red-50' 
                       : 'border-gray-300'
                   }`}
                   rows={4}
                   placeholder="Describe your item in detail, including condition, features, and any defects..."
                 />
-                {validationErrors.includes('description') && (
-                  <p className="text-sm text-red-600 mt-1">Description is required</p>
+                {validationErrors.description && (
+                  <p className="text-sm text-red-600 mt-1">{validationErrors.description}</p>
                 )}
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>{formData.description.length} characters</span>
+                  <span className={formData.description.length < 10 ? 'text-red-500' : 'text-green-600'}>
+                    {formData.description.length < 10 ? 'Minimum 10 characters required' : 'Good length!'}
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -285,7 +374,7 @@ export default function SellItemPage() {
                     value={formData.category}
                     onChange={(e) => handleInputChange('category', e.target.value)}
                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
-                      validationErrors.includes('category') 
+                      validationErrors.category 
                         ? 'border-red-500 bg-red-50' 
                         : 'border-gray-300'
                     }`}
@@ -295,8 +384,8 @@ export default function SellItemPage() {
                       <option key={cat.value} value={cat.value}>{cat.label}</option>
                     ))}
                   </select>
-                  {validationErrors.includes('category') && (
-                    <p className="text-sm text-red-600 mt-1">Category is required</p>
+                  {validationErrors.category && (
+                    <p className="text-sm text-red-600 mt-1">{validationErrors.category}</p>
                   )}
                 </div>
 
@@ -308,7 +397,7 @@ export default function SellItemPage() {
                     value={formData.condition}
                     onChange={(e) => handleInputChange('condition', e.target.value)}
                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
-                      validationErrors.includes('condition') 
+                      validationErrors.condition 
                         ? 'border-red-500 bg-red-50' 
                         : 'border-gray-300'
                     }`}
@@ -318,8 +407,8 @@ export default function SellItemPage() {
                       <option key={condition.value} value={condition.value}>{condition.label}</option>
                     ))}
                   </select>
-                  {validationErrors.includes('condition') && (
-                    <p className="text-sm text-red-600 mt-1">Condition is required</p>
+                  {validationErrors.condition && (
+                    <p className="text-sm text-red-600 mt-1">{validationErrors.condition}</p>
                   )}
                 </div>
               </div>
@@ -344,14 +433,14 @@ export default function SellItemPage() {
                     value={formData.price || ''}
                     onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
-                      validationErrors.includes('price') 
+                      validationErrors.price 
                         ? 'border-red-500 bg-red-50' 
                         : 'border-gray-300'
                     }`}
                     placeholder="50.00"
                   />
-                  {validationErrors.includes('price') && (
-                    <p className="text-sm text-red-600 mt-1">Price is required and must be greater than 0</p>
+                  {validationErrors.price && (
+                    <p className="text-sm text-red-600 mt-1">{validationErrors.price}</p>
                   )}
                 </div>
 
@@ -392,14 +481,14 @@ export default function SellItemPage() {
                   value={formData.city}
                   onChange={(e) => handleInputChange('city', e.target.value)}
                   className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
-                    validationErrors.includes('city') 
+                    validationErrors.city 
                       ? 'border-red-500 bg-red-50' 
                       : 'border-gray-300'
                   }`}
                   placeholder="e.g., Manchester, Birmingham, Leeds"
                 />
-                {validationErrors.includes('city') && (
-                  <p className="text-sm text-red-600 mt-1">City is required</p>
+                {validationErrors.city && (
+                  <p className="text-sm text-red-600 mt-1">{validationErrors.city}</p>
                 )}
                 <p className="text-xs text-gray-500 mt-1">This will be shown publicly to help buyers find your item</p>
               </div>
@@ -437,14 +526,14 @@ export default function SellItemPage() {
                     value={formData.phoneNumber}
                     onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
-                      validationErrors.includes('phoneNumber') 
+                      validationErrors.phoneNumber 
                         ? 'border-red-500 bg-red-50' 
                         : 'border-gray-300'
                     }`}
                     placeholder="+44 7XXX XXXXXX"
                   />
-                  {validationErrors.includes('phoneNumber') && (
-                    <p className="text-sm text-red-600 mt-1">Phone number is required for this contact method</p>
+                  {validationErrors.phoneNumber && (
+                    <p className="text-sm text-red-600 mt-1">{validationErrors.phoneNumber}</p>
                   )}
                 </div>
               )}
