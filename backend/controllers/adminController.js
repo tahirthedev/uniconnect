@@ -616,14 +616,109 @@ const getSystemHealth = async (req, res) => {
   }
 };
 
+// Delete user (admin only)
+const deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Prevent users from deleting themselves
+    if (userId === req.user._id.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete yourself'
+      });
+    }
+
+    const userToDelete = await User.findById(userId);
+
+    if (!userToDelete) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Prevent deleting other admins (unless current user is admin)
+    if (userToDelete.role === 'admin' && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot delete admin users'
+      });
+    }
+
+    // Delete user's posts first
+    await Post.deleteMany({ author: userId });
+
+    // Delete the user
+    await User.findByIdAndDelete(userId);
+
+    res.json({
+      success: true,
+      message: 'User deleted successfully',
+      deletedUser: {
+        id: userToDelete._id,
+        name: userToDelete.name,
+        email: userToDelete.email
+      }
+    });
+
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete user',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Delete post (admin only)
+const deletePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: 'Post not found'
+      });
+    }
+
+    // Delete the post
+    await Post.findByIdAndDelete(postId);
+
+    res.json({
+      success: true,
+      message: 'Post deleted successfully',
+      deletedPost: {
+        id: post._id,
+        title: post.title,
+        author: post.author
+      }
+    });
+
+  } catch (error) {
+    console.error('Delete post error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete post',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
   updateUserRole,
   banUser,
   unbanUser,
+  deleteUser,
   getAllPosts,
   updatePostStatus,
+  deletePost,
   getFlaggedContent,
   getAnalyticsDashboard,
   updateDailyAnalytics,

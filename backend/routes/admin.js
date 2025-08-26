@@ -7,8 +7,10 @@ const {
   updateUserRole,
   banUser,
   unbanUser,
+  deleteUser,
   getAllPosts,
   updatePostStatus,
+  deletePost,
   getFlaggedContent,
   getAnalyticsDashboard,
   updateDailyAnalytics,
@@ -68,6 +70,11 @@ router.post('/users/:userId/unban', moderatorOrAdmin, [
   commonValidations.objectId('userId')
 ], unbanUser);
 
+// Delete user (admin only)
+router.delete('/users/:userId', adminOnly, [
+  commonValidations.objectId('userId')
+], deleteUser);
+
 // Post management routes
 router.get('/posts', moderatorOrAdmin, [
   require('express-validator').query('status')
@@ -116,5 +123,10 @@ router.get('/flagged-content', moderatorOrAdmin, [
   ...commonValidations.pagination,
   require('../utils/validation').handleValidationErrors
 ], getFlaggedContent);
+
+// Delete post (admin only)
+router.delete('/posts/:postId', adminOnly, [
+  commonValidations.objectId('postId')
+], deletePost);
 
 module.exports = router;
