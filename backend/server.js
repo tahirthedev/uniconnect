@@ -20,6 +20,7 @@ const reportRoutes = require('./routes/reports');
 const adminRoutes = require('./routes/admin');
 const bookingRoutes = require('./routes/bookings');
 const uploadRoutes = require('./routes/uploads');
+const migrationRoutes = require('./routes/migration');
 
 // Initialize Express app
 const app = express();
@@ -115,6 +116,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/migration', migrationRoutes);
 
 // ⚠️ TEMPORARY MIGRATION ENDPOINT - REMOVE AFTER USE ⚠️
 app.get('/api/migrate-city-names', async (req, res) => {

@@ -40,7 +40,7 @@ const sendMessage = async (req, res) => {
     const contentAnalysis = detectFlaggedContent(messageBody);
 
     // Generate conversation ID (consistent for both users)
-    const conversationId = [senderId.toString(), receiverId].sort().join('_');
+    const conversationId = [senderId.toString(), receiverId].sort().join('-');
 
     const messageData = {
       sender: senderId,
@@ -140,7 +140,7 @@ const getConversation = async (req, res) => {
 
     // Mark messages as read for the current user
     await Message.markConversationAsRead(
-      messages.length > 0 ? messages[0].conversationId : `${[currentUserId, userId].sort().join('_')}`,
+      messages.length > 0 ? messages[0].conversationId : `${[currentUserId, userId].sort().join('-')}`,
       currentUserId
     );
 
