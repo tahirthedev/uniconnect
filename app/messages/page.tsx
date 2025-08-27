@@ -63,9 +63,16 @@ export default function MessagesPage() {
 
     try {
       const response = await apiClient.getConversations();
-      setConversations(response.conversations || []);
+      // Handle both empty responses and undefined/null responses
+      if (response && response.conversations) {
+        setConversations(response.conversations);
+      } else {
+        setConversations([]);
+      }
     } catch (error) {
       console.error('Failed to load conversations:', error);
+      // Set empty array on error to prevent crashes
+      setConversations([]);
     } finally {
       setLoading(false);
     }
@@ -77,7 +84,7 @@ export default function MessagesPage() {
   };
 
   const filteredConversations = conversations.filter(conv =>
-    conv.otherUser.name.toLowerCase().includes(searchTerm.toLowerCase())
+    conv?.otherUser?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const formatTime = (dateString: string) => {
@@ -175,7 +182,13 @@ export default function MessagesPage() {
                 </p>
               </div>
             ) : (
-              filteredConversations.map((conversation) => (
+              filteredConversations.map((conversation) => {
+                // Safety check to ensure conversation has required data
+                if (!conversation?._id || !conversation?.otherUser?.name) {
+                  return null;
+                }
+                
+                return (
                 <div
                   key={conversation._id}
                   onClick={() => handleConversationClick(conversation.otherUser)}
@@ -209,17 +222,18 @@ export default function MessagesPage() {
                           )}
                           <p className="text-xs text-gray-500 flex items-center">
                             <Clock className="h-3 w-3 mr-1" />
-                            {formatTime(conversation.lastMessage.createdAt)}
+                            {conversation.lastMessage?.createdAt ? formatTime(conversation.lastMessage.createdAt) : 'Unknown time'}
                           </p>
                         </div>
                       </div>
                       <p className="text-sm text-gray-500 truncate">
-                        {truncateMessage(conversation.lastMessage.messageBody)}
+                        {conversation.lastMessage?.messageBody ? truncateMessage(conversation.lastMessage.messageBody) : 'No message content'}
                       </p>
                     </div>
                   </div>
                 </div>
-              ))
+                );
+              }).filter(Boolean) // Remove null entries
             )}
           </div>
         </div>

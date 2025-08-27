@@ -44,7 +44,19 @@ export class ApiClient {
         }
       }
       
-      return await response.json();
+      // Handle 204 No Content responses
+      if (response.status === 204) {
+        return null;
+      }
+      
+      // Check if response has content before parsing JSON
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+      } else {
+        // Return empty object for non-JSON responses
+        return {};
+      }
     } catch (error) {
       // Only log errors in development mode
       if (process.env.NODE_ENV === 'development') {
@@ -149,7 +161,9 @@ export class ApiClient {
   }
 
   async getConversations() {
-    return this.request('/api/messages');
+    const response = await this.request('/api/messages');
+    // Handle 204 responses or empty responses
+    return response || { conversations: [] };
   }
 
   // Booking endpoints

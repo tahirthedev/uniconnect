@@ -127,7 +127,7 @@ messageSchema.methods.softDelete = function(deletedBy) {
 // Static method to get conversation between two users
 messageSchema.statics.getConversation = function(user1Id, user2Id, limit = 50, skip = 0) {
   const participants = [user1Id.toString(), user2Id.toString()].sort();
-  const conversationId = participants.join('_');
+  const conversationId = participants.join('-');
   
   return this.find({
     conversationId: conversationId,
