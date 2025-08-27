@@ -1,13 +1,27 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-// Connect to database
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/uniconnect');
+// Connect to database using the same URI as your app
+const connectDB = async () => {
+  try {
+    // Use the full MongoDB URI from environment variables
+    const mongoURI = process.env.MONGODB_URI;
+    console.log('Connecting to MongoDB...');
+    await mongoose.connect(mongoURI);
+    console.log('✅ MongoDB Connected');
+  } catch (error) {
+    console.error('❌ MongoDB connection failed:', error.message);
+    process.exit(1);
+  }
+};
 
 const Message = require('./models/Message');
 
 async function migrateConversationIds() {
   try {
+    // Connect to database first
+    await connectDB();
+    
     console.log('Starting conversation ID migration...');
     
     // Find all messages with underscore format
